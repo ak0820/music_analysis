@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>楽曲分析</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #F0F2FF; font-family: Outfit, sans-serif; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+@keyframes pop { 0%{transform:scale(0.93);opacity:0} 100%{transform:scale(1);opacity:1} }
+.fade-up { animation: fadeUp 0.28s ease; }
+.pop { animation: pop 0.25s ease; }
+input:focus { outline: none; border-color: #5F27CD !important; }
+.song-row:hover { background: #fafaff !important; }
+.sample-btn:hover { border-color: var(--color) !important; }
+.tab-btn { transition: all 0.18s; }
+#api-section { border-bottom: 1px solid #e8e8f0; padding-bottom: 16px; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+var PALETTE = ["#FF6B6B","#FF9F43","#54A0FF","#5F27CD","#00D2D3","#FF6B81","#1DD1A1","#FECA57"];
+
+var SONG_DB = {
+  "lemon": {
+    title: "Lemon", artist: "米津玄師", key: "Dbメジャー / Bbマイナー", bpm: 84, genre: "J-Pop", cat: "J-POP",
+    chords: "Bbm Gb Db Ab Bbm Gb Ab Db",
+    notes: "サビのコード進行",
+    analysis: [
+      { heading: "1. キーとスケール", body: "BbマイナーはDb長調の平行短調。暗く内省的な雰囲気で、悲しみや喪失感の表現に最適なキーです。" },
+      { heading: "2. コード機能分析", body: "Bbm(Im)-Gb(bVI)-Db(bIII)-Ab(bVII)の進行。bVIIはドミナントの代わりにImへ解決し独特の浮遊感を生みます。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "王道マイナー進行の変形。平行長調のコードを織り交ぜ、明暗のコントラストを作っています。" },
+      { heading: "4. 楽典的なポイント", body: "AbはbVII度の自然短音階的解決。GbとDbは平行長調のI・IVにあたり調性の二面性を演出します。" },
+      { heading: "5. 似た傾向の曲", body: "「Pretender」Official髭男dism、「夜に駆ける」YOASOBI、「宿命」Official髭男dism" },
+    ]
+  },
+  "yoasobi": {
+    title: "夜に駆ける", artist: "YOASOBI", key: "Abメジャー", bpm: 130, genre: "J-Pop", cat: "J-POP",
+    chords: "Ab Fm Db Eb Ab Fm Bbm Eb",
+    notes: "サビの進行(I-VIm-IV-V)",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Abメジャーは明るく躍動感のあるキー。疾走感のあるポップスに好まれます。" },
+      { heading: "2. コード機能分析", body: "I-VIm-IV-Vはカノン進行の変形で王道パターン。安定と前進感が同居します。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "後半のBbm(IIm)はVへ向かうプレドミナント。高速BPMと相まって疾走感を演出します。" },
+      { heading: "4. 楽典的なポイント", body: "ダイアトニックコードのみでも、テンポとメロディの音域設計で強い緊張感を生んでいます。" },
+      { heading: "5. 似た傾向の曲", body: "「怪物」YOASOBI、「Dynamite」BTS、「ドライフラワー」優里" },
+    ]
+  },
+  "pretender": {
+    title: "Pretender", artist: "Official髭男dism", key: "Abメジャー", bpm: 92, genre: "J-Pop", cat: "J-POP",
+    chords: "DbM7 Eb Cm7 Fm7",
+    notes: "サビの4536進行",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Abメジャーの楽曲ですがサビはIVM7から始まり、切なさと浮遊感を演出しています。" },
+      { heading: "2. コード機能分析", body: "DbM7(IV)-Eb(V)-Cm7(IIIm)-Fm7(VIm)のいわゆる「4536進行」。トニックを避け続けることで解決感を先送りします。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "J-Popで最も使われる進行の一つ。IIIm7がドミナント代理として機能し滑らかな流れを作ります。" },
+      { heading: "4. 楽典的なポイント", body: "トニック(Ab)がほぼ現れないことで「報われない想い」という歌詞世界と音楽構造が一致しています。" },
+      { heading: "5. 似た傾向の曲", body: "「白日」King Gnu、「ドライフラワー」優里、「打上花火」DAOKO×米津玄師" },
+    ]
+  },
+  "hakujitsu": {
+    title: "白日", artist: "King Gnu", key: "Abメジャー / Fマイナー", bpm: 93, genre: "J-Pop", cat: "J-POP",
+    chords: "DbM7 Eb7 Cm7 Fm7",
+    notes: "4536進行ベースのサビ",
+    analysis: [
+      { heading: "1. キーとスケール", body: "AbメジャーとFマイナーを行き来する調性感。ソウル・R&Bの影響を感じるキー使いです。" },
+      { heading: "2. コード機能分析", body: "IVM7-V7-IIIm7-VIm7の4536進行。Eb7のドミナント7thがブルージーな色を加えます。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "ゴスペル的なコーラスワークと4536進行の組み合わせ。細かいパッシングコードも特徴です。" },
+      { heading: "4. 楽典的なポイント", body: "V7(Eb7)の使用により通常の4536よりドミナント感が強く、ソウルフルな推進力があります。" },
+      { heading: "5. 似た傾向の曲", body: "「Pretender」Official髭男dism、「灰色と青」米津玄師、「マリーゴールド」あいみょん" },
+    ]
+  },
+  "marigold": {
+    title: "マリーゴールド", artist: "あいみょん", key: "Dメジャー", bpm: 106, genre: "J-Pop", cat: "J-POP",
+    chords: "D A Bm G",
+    notes: "I-V-VIm-IVの王道進行",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Dメジャーは明るく開放的なキー。フォーク・ポップの温かみを支えます。" },
+      { heading: "2. コード機能分析", body: "I(D)-V(A)-VIm(Bm)-IV(G)は世界中のポップスで最頻出の進行。安心感と普遍性があります。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "カノン進行の短縮形。シンプルな循環がストレートな歌詞とメロディを引き立てます。" },
+      { heading: "4. 楽典的なポイント", body: "3コード+VImのみの構成は「良いメロディはシンプルな和声で映える」という好例です。" },
+      { heading: "5. 似た傾向の曲", body: "「チェリー」スピッツ、「Let It Be」The Beatles、「小さな恋のうた」MONGOL800" },
+    ]
+  },
+  "dryflower": {
+    title: "ドライフラワー", artist: "優里", key: "Dメジャー", bpm: 74, genre: "J-Pop", cat: "J-POP",
+    chords: "G A F#m Bm",
+    notes: "4536進行のバラード",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Dメジャーのスローバラード。ゆったりしたテンポが切なさを増幅します。" },
+      { heading: "2. コード機能分析", body: "G(IV)-A(V)-F#m(IIIm)-Bm(VIm)の4536進行。トニック回避により未練の感情を表現します。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "J-Popバラードの定番進行。BPM74の遅さがコード一つ一つの響きを際立たせます。" },
+      { heading: "4. 楽典的なポイント", body: "IIIm(F#m)はトニック代理でありながらどこか不安定で、歌詞の心情と共鳴します。" },
+      { heading: "5. 似た傾向の曲", body: "「Pretender」Official髭男dism、「猫」DISH//、「ハルノヒ」あいみょん" },
+    ]
+  },
+  "cherry": {
+    title: "チェリー", artist: "スピッツ", key: "Cメジャー", bpm: 90, genre: "J-Pop", cat: "J-POP",
+    chords: "C G Am F",
+    notes: "I-V-VIm-IVの王道進行",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Cメジャーは最も基本的なキー。素朴で普遍的な響きがバンドサウンドと調和します。" },
+      { heading: "2. コード機能分析", body: "I-V-VIm-IVは「王道進行」の代表格。何度聴いても飽きない安定感があります。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "1990年代J-Popを象徴するシンプルな進行。アルペジオのギターが彩りを加えます。" },
+      { heading: "4. 楽典的なポイント", body: "全てダイアトニックコードで構成され、メロディの良さだけで勝負した名曲構造です。" },
+      { heading: "5. 似た傾向の曲", body: "「マリーゴールド」あいみょん、「空も飛べるはず」スピッツ、「Stand By Me」Ben E. King" },
+    ]
+  },
+  "uchiagehanabi": {
+    title: "打上花火", artist: "DAOKO×米津玄師", key: "Dbメジャー", bpm: 96, genre: "J-Pop", cat: "J-POP",
+    chords: "GbM7 Ab Fm7 Bbm",
+    notes: "サビの4536進行",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Dbメジャーの柔らかく幻想的な響き。夏の夕暮れの情景と調和するキー選択です。" },
+      { heading: "2. コード機能分析", body: "GbM7(IV)-Ab(V)-Fm7(IIIm)-Bbm(VIm)の4536進行。切ない浮遊感が持続します。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "メジャー7thの響きとエレクトロニカ的なサウンドデザインの融合が特徴です。" },
+      { heading: "4. 楽典的なポイント", body: "IVM7から始まることでトニックの安定を避け、「届かない想い」を和声的に表現しています。" },
+      { heading: "5. 似た傾向の曲", body: "「Lemon」米津玄師、「灰色と青」米津玄師、「Pretender」Official髭男dism" },
+    ]
+  },
+  "marunouchi": {
+    title: "丸の内サディスティック", artist: "椎名林檎", key: "Abメジャー", bpm: 103, genre: "J-Pop", cat: "J-POP",
+    chords: "DbM7 C7 Fm7 Ab7",
+    notes: "Just the Two of Us進行",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Abメジャー基調ながらFマイナーの色が濃い、ジャジーな都会的キー感です。" },
+      { heading: "2. コード機能分析", body: "DbM7(IVM7)-C7(III7)-Fm7(VIm7)の進行。III7はセカンダリードミナントとしてVImへ強く解決します。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "通称「Just the Two of Us進行」。R&B/ジャズ由来のおしゃれ進行の代名詞です。" },
+      { heading: "4. 楽典的なポイント", body: "C7のE音(長3度)がFmへの導音として機能し、ダイアトニック外の緊張と解決を生みます。" },
+      { heading: "5. 似た傾向の曲", body: "「Just the Two of Us」Grover Washington Jr.、「お勉強しといてよ」ずっと真夜中でいいのに。" },
+    ]
+  },
+  "zankoku": {
+    title: "残酷な天使のテーゼ", artist: "高橋洋子", key: "Cマイナー", bpm: 128, genre: "J-Pop", cat: "J-POP",
+    chords: "Cm Ab Bb Cm",
+    notes: "Im-bVI-bVII-Imのマイナー進行",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Cマイナーの力強くドラマチックなキー。アニソンの定番調性の一つです。" },
+      { heading: "2. コード機能分析", body: "Im-bVI-bVII-Imはマイナーキーの王道循環。bVIIがImへ戻る推進力を持ちます。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "エオリアン(自然短音階)ベースの進行で、勇壮さと哀愁を両立させています。" },
+      { heading: "4. 楽典的なポイント", body: "ドミナント(G7)を使わずbVIIで解決する手法は、ロック・アニソンで多用されるモーダルな響きです。" },
+      { heading: "5. 似た傾向の曲", body: "「紅蓮華」LiSA、「Shape of You」Ed Sheeran(同型進行)、「創聖のアクエリオン」AKINO" },
+    ]
+  },
+  "idol": {
+    title: "アイドル", artist: "YOASOBI", key: "Bマイナー", bpm: 166, genre: "J-Pop", cat: "J-POP",
+    chords: "Bm G A F#m",
+    notes: "高速マイナー進行(採譜による目安)",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Bマイナーの高速ナンバー。目まぐるしい展開と転調が特徴の楽曲です。" },
+      { heading: "2. コード機能分析", body: "Im-bVI-bVII-Vmを基調とした進行。セクションごとに雰囲気がガラリと変わります。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "ラップ・アイドルポップ・ロックが混在し、各セクションで和声のアプローチも変化します。" },
+      { heading: "4. 楽典的なポイント", body: "BPM166の高速展開の中で頻繁な場面転換を行う、現代J-Popの情報密度を象徴する構造です。" },
+      { heading: "5. 似た傾向の曲", body: "「怪物」YOASOBI、「うっせぇわ」Ado、「新時代」Ado" },
+    ]
+  },
+  "dynamite": {
+    title: "Dynamite", artist: "BTS", key: "Fメジャー", bpm: 114, genre: "K-Pop / Disco", cat: "K-POP",
+    chords: "F Bb C Dm F Bb C C",
+    notes: "ディスコ調のI-IV-V進行",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Fメジャーの明るく開放的な響き。70年代ディスコポップを意識したキー選択です。" },
+      { heading: "2. コード機能分析", body: "I-IV-V-VImの典型的ポップ進行。I→IVの動きがディスコ特有のグルーヴを生みます。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "4つ打ちリズムとブラス風シンセの組み合わせがレトロなディスコ感を演出します。" },
+      { heading: "4. 楽典的なポイント", body: "DmはFのVImとしてトニック代理で機能し、Dm-C-Fの下降が自然な解決を作ります。" },
+      { heading: "5. 似た傾向の曲", body: "「Uptown Funk」Bruno Mars、「Happy」Pharrell Williams、「Butter」BTS" },
+    ]
+  },
+  "keepitshow": {
+    title: "Keep It Show", artist: "M.O.N.T", key: "Abメジャー", bpm: 105, genre: "K-Pop / R&B", cat: "K-POP",
+    chords: "Ab Fm Db Eb Ab Fm Bbm Eb",
+    notes: "R&Bポップの王道進行",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Abメジャーは温かみと洗練さを持つキー。K-PopのR&B路線でよく選ばれます。" },
+      { heading: "2. コード機能分析", body: "I-VIm-IV-Vの王道進行に後半IIm(Bbm)を挿入。Vへの滑らかなモーションを作ります。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "カノン系進行のR&B的洗練形。ミッドテンポのグルーヴに最適な構造です。" },
+      { heading: "4. 楽典的なポイント", body: "IImの挿入で単調さを回避しつつ、4度進行の心地よい解決感を保っています。" },
+      { heading: "5. 似た傾向の曲", body: "「Will You Be My Girlfriend?」M.O.N.T、「LOVE SHOT」EXO、「夜に駆ける」YOASOBI" },
+    ]
+  },
+  "lovescenario": {
+    title: "LOVE SCENARIO", artist: "iKON", key: "Dbメジャー", bpm: 96, genre: "K-Pop", cat: "K-POP",
+    chords: "Db Ab Bbm Gb",
+    notes: "シンプルなI-V-VIm-IVループ",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Dbメジャーの柔らかい響き。口ずさみやすいメロディを支える穏やかなキーです。" },
+      { heading: "2. コード機能分析", body: "I-V-VIm-IVの世界標準進行。韓国で社会現象になった中毒性はこのシンプルさにあります。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "ミニマルなトラックと単純な循環進行の反復。子供でも歌える普遍性を実現しました。" },
+      { heading: "4. 楽典的なポイント", body: "コード4つの繰り返しでも、メロディのリズム変化と歌割りで飽きさせない構成です。" },
+      { heading: "5. 似た傾向の曲", body: "「マリーゴールド」あいみょん、「Someone Like You」Adele、「TT」TWICE" },
+    ]
+  },
+  "gangnam": {
+    title: "江南スタイル", artist: "PSY", key: "Bマイナー", bpm: 132, genre: "K-Pop / EDM", cat: "K-POP",
+    chords: "Bm Bm Bm Bm",
+    notes: "ほぼ単一コードのEDM構造",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Bマイナーのワンコード構造。EDMでは和声の変化よりリズムと音色で展開を作ります。" },
+      { heading: "2. コード機能分析", body: "実質Im一発の上でシンセリフとビートが変化する、和声的にはミニマルな構成です。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "ビルドアップとドロップというEDMの定型構造。コード進行に頼らない例の代表格です。" },
+      { heading: "4. 楽典的なポイント", body: "単一和音上でもメロディがマイナースケールの音を使い分け、緊張と緩和を作っています。" },
+      { heading: "5. 似た傾向の曲", body: "「Turn Down for What」DJ Snake、「Animals」Martin Garrix、「Bang Bang Bang」BIGBANG" },
+    ]
+  },
+  "butter": {
+    title: "Butter", artist: "BTS", key: "Abマイナー", bpm: 110, genre: "K-Pop", cat: "K-POP",
+    chords: "Abm Db Gb Abm",
+    notes: "ファンク系マイナーループ(採譜による目安)",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Abマイナーのクールな響き。夏向けファンクポップに程よい陰影を加えます。" },
+      { heading: "2. コード機能分析", body: "Im-IV-bVIIを基調とするループ。ベースラインのグルーヴが主役の構造です。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "80年代シンセファンクへのオマージュ。和声よりリズムセクションの跳ねが核です。" },
+      { heading: "4. 楽典的なポイント", body: "IVメジャー(Db)の挿入がドリアン的な明るさを生み、マイナーながら軽快に響きます。" },
+      { heading: "5. 似た傾向の曲", body: "「Dynamite」BTS、「Billie Jean」Michael Jackson、「Blinding Lights」The Weeknd" },
+    ]
+  },
+  "supershy": {
+    title: "Super Shy", artist: "NewJeans", key: "Fマイナー", bpm: 150, genre: "K-Pop", cat: "K-POP",
+    chords: "Fm Ab Eb Bbm",
+    notes: "高速ドラムンベース系ループ(目安)",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Fマイナーの疾走感あるキー。UKガラージ/ドラムンベース由来の高速ビートに乗ります。" },
+      { heading: "2. コード機能分析", body: "Im-bIII-bVII-IVmを基調とするループ。浮遊感のあるコーラスワークが特徴です。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "150BPMの高速ビートに柔らかいボーカルを乗せるコントラストがNewJeansの署名です。" },
+      { heading: "4. 楽典的なポイント", body: "コードは背景に徹し、ボーカルチョップとベースlaineが楽曲の推進力を担います。" },
+      { heading: "5. 似た傾向の曲", body: "「Ditto」NewJeans、「Attention」NewJeans、「On & On」Piri&Tommy系UKサウンド" },
+    ]
+  },
+  "ditto": {
+    title: "Ditto", artist: "NewJeans", key: "Bメジャー", bpm: 134, genre: "K-Pop", cat: "K-POP",
+    chords: "BM7 G#m7 EM7 F#",
+    notes: "ノスタルジックなメジャー7thループ(目安)",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Bメジャーの透明感あるキー。ボルチモアクラブビートと組み合わさり独特の切なさを生みます。" },
+      { heading: "2. コード機能分析", body: "IM7-VIm7-IVM7-Vのループ。メジャー7thの響きがノスタルジーを演出します。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "淡々と繰り返すループと余白のあるアレンジ。「懐かしさ」を音響で設計した楽曲です。" },
+      { heading: "4. 楽典的なポイント", body: "M7コードの浮遊感と高速ビートの組み合わせが、多幸感と切なさの同居を実現します。" },
+      { heading: "5. 似た傾向の曲", body: "「OMG」NewJeans、「Plastic Love」竹内まりや(ノスタルジー繋がり)、「Hype Boy」NewJeans" },
+    ]
+  },
+  "springday": {
+    title: "Spring Day", artist: "BTS", key: "Abメジャー", bpm: 132, genre: "K-Pop", cat: "K-POP",
+    chords: "Ab Eb Fm Db",
+    notes: "エモーショナルなI-V-VIm-IV(目安)",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Abメジャーの温かくも切ないキー。喪失と再会をテーマにしたバラード寄りポップです。" },
+      { heading: "2. コード機能分析", body: "I-V-VIm-IVの王道進行。ピアノとシンセのレイヤーが感情の高まりを支えます。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "静かなヴァースから壮大なサビへのダイナミクス設計が感動を生む構造です。" },
+      { heading: "4. 楽典的なポイント", body: "シンプルな進行だからこそメロディの跳躍とボーカルの表現力が際立ちます。" },
+      { heading: "5. 似た傾向の曲", body: "「Perfect」Ed Sheeran、「夜に駆ける」YOASOBI、「Butterfly」BTS" },
+    ]
+  },
+  "shapeofyou": {
+    title: "Shape of You", artist: "Ed Sheeran", key: "C#マイナー", bpm: 96, genre: "Pop", cat: "洋楽",
+    chords: "C#m A B C#m",
+    notes: "Im-bVI-bVIIのループ進行",
+    analysis: [
+      { heading: "1. キーとスケール", body: "C#マイナー(エオリアン)のグルーヴィーで哀愁あるキー。ダンスポップと好相性です。" },
+      { heading: "2. コード機能分析", body: "Im-bVI-bVIIのループ。bVIIはドミナント機能を持たず浮遊感のある解決をします。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "3コードのループとマリンバ系リフの反復が中毒性を生む、極めてミニマルな設計です。" },
+      { heading: "4. 楽典的なポイント", body: "bVI-bVII-Imはエオリアンケーデンス。ドミナント7thを使わない自然短音階の解決です。" },
+      { heading: "5. 似た傾向の曲", body: "「残酷な天使のテーゼ」高橋洋子(同型)、「Shallow」Lady Gaga、「Someone Like You」Adele" },
+    ]
+  },
+  "letitbe": {
+    title: "Let It Be", artist: "The Beatles", key: "Cメジャー", bpm: 72, genre: "Rock / Pop", cat: "洋楽",
+    chords: "C G Am F",
+    notes: "I-V-VIm-IVの原点的名曲",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Cメジャーの普遍的な響き。ゴスペルの影響を受けた荘厳さがあります。" },
+      { heading: "2. コード機能分析", body: "I-V-VIm-IVの完成形。この曲が後の無数のポップスの雛形になりました。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "ピアノの白鍵のみで弾ける構成。シンプルさの中に祈りのような重みがあります。" },
+      { heading: "4. 楽典的なポイント", body: "F(IV)からC(I)へのプラガルケーデンス(アーメン終止)が教会音楽的な安らぎを与えます。" },
+      { heading: "5. 似た傾向の曲", body: "「No Woman No Cry」Bob Marley、「チェリー」スピッツ、「Don't Stop Believin'」Journey" },
+    ]
+  },
+  "someonelikeyou": {
+    title: "Someone Like You", artist: "Adele", key: "Aメジャー", bpm: 68, genre: "Pop / Ballad", cat: "洋楽",
+    chords: "A E F#m D",
+    notes: "I-V-VIm-IVのピアノバラード",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Aメジャーの澄んだ響き。ピアノ一本の伴奏が歌声の感情を最大限に引き出します。" },
+      { heading: "2. コード機能分析", body: "I-V-VIm-IVの王道進行。アルペジオの反復が静かな悲しみを紡ぎます。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "和声の変化を最小限にし、メロディと歌詞に全てを委ねるソングライティングの教科書です。" },
+      { heading: "4. 楽典的なポイント", body: "VIm(F#m)への移行が切なさのピークを作り、IVで一時の安らぎへ着地します。" },
+      { heading: "5. 似た傾向の曲", body: "「Let It Be」The Beatles、「ドライフラワー」優里、「All of Me」John Legend" },
+    ]
+  },
+  "rollinginthedeep": {
+    title: "Rolling in the Deep", artist: "Adele", key: "Cマイナー", bpm: 105, genre: "Pop / Soul", cat: "洋楽",
+    chords: "Cm Bb Ab Bb",
+    notes: "Im-bVII-bVIのソウル進行",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Cマイナーの力強い響き。怒りと決意を表現するソウルフルなキーです。" },
+      { heading: "2. コード機能分析", body: "Im-bVII-bVI-bVIIの循環。上昇と下降を繰り返し感情の波を作ります。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "ゴスペル由来のコーラスと4つ打ちキックが怒りのエネルギーを増幅します。" },
+      { heading: "4. 楽典的なポイント", body: "bVI-bVII-Imの上行はエオリアンの定番で、執念のような推進力を持ちます。" },
+      { heading: "5. 似た傾向の曲", body: "「残酷な天使のテーゼ」高橋洋子、「Believer」Imagine Dragons、「Skyfall」Adele" },
+    ]
+  },
+  "uptownfunk": {
+    title: "Uptown Funk", artist: "Mark Ronson ft. Bruno Mars", key: "Dドリアン", bpm: 115, genre: "Funk", cat: "洋楽",
+    chords: "Dm7 G7 Dm7 G7",
+    notes: "2コードのファンクヴァンプ",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Dドリアンモードのファンク。マイナーながら明るいB音(長6度)が特徴です。" },
+      { heading: "2. コード機能分析", body: "Dm7-G7の2コードヴァンプ。IIm7-V7の関係を無限ループさせるファンクの定石です。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "和声の動きを最小化しリズムのキメとブラスで展開を作る、ファンクの王道構造です。" },
+      { heading: "4. 楽典的なポイント", body: "G7のB音がドリアンの特性音。マイナーなのにポジティブな独特の明るさを生みます。" },
+      { heading: "5. 似た傾向の曲", body: "「Superstition」Stevie Wonder、「Get Lucky」Daft Punk、「Treasure」Bruno Mars" },
+    ]
+  },
+  "billiejean": {
+    title: "Billie Jean", artist: "Michael Jackson", key: "F#マイナー", bpm: 117, genre: "Pop / Funk", cat: "洋楽",
+    chords: "F#m7 G#m7 F#m7 G#m7",
+    notes: "ベースラインが主役のIm-IIm往復",
+    analysis: [
+      { heading: "1. キーとスケール", body: "F#マイナーのクールで緊張感あるキー。夜の都会を思わせる響きです。" },
+      { heading: "2. コード機能分析", body: "Im7-IIm7の往復というミニマルな和声。伝説的なベースラインが全てを支えます。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "コードよりベースリフとビートで曲を定義する、ダンスミュージックの金字塔です。" },
+      { heading: "4. 楽典的なポイント", body: "IIm7(G#m7)はドリアン的な響きを加え、解決しない緊張感を持続させます。" },
+      { heading: "5. 似た傾向の曲", body: "「Smooth Criminal」Michael Jackson、「Butter」BTS、「Da Funk」Daft Punk" },
+    ]
+  },
+  "perfect": {
+    title: "Perfect", artist: "Ed Sheeran", key: "Abメジャー", bpm: 63, genre: "Pop / Ballad", cat: "洋楽",
+    chords: "Ab Fm Db Eb",
+    notes: "I-VIm-IV-Vの50年代進行",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Abメジャーの温かいキー。ワルツ風の3連符ビートがクラシカルなロマンを演出します。" },
+      { heading: "2. コード機能分析", body: "I-VIm-IV-Vは「50年代進行」と呼ばれるドゥーワップ時代の定番。永遠の安定感があります。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "オールディーズの進行を現代的なプロダクションで蘇らせた王道バラードです。" },
+      { heading: "4. 楽典的なポイント", body: "VIm(Fm)がI(Ab)の甘さに陰影を加え、V(Eb)が次の循環への期待を作ります。" },
+      { heading: "5. 似た傾向の曲", body: "「Stand By Me」Ben E. King、「Spring Day」BTS、「All of Me」John Legend" },
+    ]
+  },
+  "blindinglights": {
+    title: "Blinding Lights", artist: "The Weeknd", key: "Fマイナー", bpm: 171, genre: "Synth-Pop", cat: "洋楽",
+    chords: "Fm Db Eb Cm",
+    notes: "80s風シンセウェイヴ進行(目安)",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Fマイナーの疾走感あるキー。80年代シンセウェイヴのネオンの夜を再現します。" },
+      { heading: "2. コード機能分析", body: "Im-bVI-bVII-Vmの循環。高速アルペジオシンセが緊張感を持続させます。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "レトロなシンセ音色と現代的ミックスの融合。171BPMの疾走感が中毒性を生みます。" },
+      { heading: "4. 楽典的なポイント", body: "Vm(Cm)の使用がドミナント感を弱め、終わらない夜のようなループ感を強調します。" },
+      { heading: "5. 似た傾向の曲", body: "「Take On Me」a-ha、「Super Shy」NewJeans、「Save Your Tears」The Weeknd" },
+    ]
+  },
+  "vivalavida": {
+    title: "Viva La Vida", artist: "Coldplay", key: "Abメジャー", bpm: 138, genre: "Rock / Pop", cat: "洋楽",
+    chords: "Db Eb Ab Fm",
+    notes: "IV-V-I-VImの高揚感ある循環",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Abメジャーの壮大な響き。ストリングスの反復が革命の歴史絵巻を描きます。" },
+      { heading: "2. コード機能分析", body: "IV-V-I-VImの循環。トニックが3番目に来ることで独特の推進力が生まれます。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "サブドミナントから始まる進行は解決を先取りし、常に前へ進む感覚を作ります。" },
+      { heading: "4. 楽典的なポイント", body: "同じ4コードの無限ループでも、楽器の追加と抜き差しでドラマを構築する好例です。" },
+      { heading: "5. 似た傾向の曲", body: "「Someone Like You」Adele、「Fix You」Coldplay、「打上花火」DAOKO×米津玄師" },
+    ]
+  },
+  "staywithme": {
+    title: "Stay With Me", artist: "Sam Smith", key: "Cメジャー", bpm: 84, genre: "Pop / Soul", cat: "洋楽",
+    chords: "Am F C",
+    notes: "VIm-IV-Iの3コードゴスペル",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Cメジャー基調ながらAmから始まる、ゴスペル的な祈りの響きを持つ楽曲です。" },
+      { heading: "2. コード機能分析", body: "VIm-IV-Iの3コードループ。シンプルな循環に聖歌隊コーラスが厚みを加えます。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "3コードの反復とゴスペルクワイアで、孤独と切望を教会音楽の文脈で表現します。" },
+      { heading: "4. 楽典的なポイント", body: "VImから始まりIで着地する円環構造が、すがるような感情の反復を音像化しています。" },
+      { heading: "5. 似た傾向の曲", body: "「Someone Like You」Adele、「Hallelujah」Leonard Cohen系、「All of Me」John Legend" },
+    ]
+  },
+  "allofme": {
+    title: "All of Me", artist: "John Legend", key: "Abメジャー", bpm: 63, genre: "Pop / Soul", cat: "洋楽",
+    chords: "Fm Db Ab Eb",
+    notes: "VIm-IV-I-Vのピアノバラード",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Abメジャーの温かなキー。ピアノの静かな伴奏が愛の告白を包み込みます。" },
+      { heading: "2. コード機能分析", body: "VIm-IV-I-Vの循環。マイナーから始まることで甘さに深みが加わります。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "50年代進行の並び替え(6-4-1-5)。現代R&Bバラードの定番形です。" },
+      { heading: "4. 楽典的なポイント", body: "Fmの陰りからAbの解決への流れが「欠点も全て愛する」という歌詞と呼応します。" },
+      { heading: "5. 似た傾向の曲", body: "「Perfect」Ed Sheeran、「Stay With Me」Sam Smith、「Someone Like You」Adele" },
+    ]
+  },
+  "autumnleaves": {
+    title: "Autumn Leaves", artist: "(Jazz Standard)", key: "Gマイナー", bpm: 120, genre: "Jazz", cat: "JAZZ / CITY POP",
+    chords: "Cm7 F7 BbM7 EbM7 Am7b5 D7 Gm7 Gm7",
+    notes: "ツーファイブの教科書的循環",
+    analysis: [
+      { heading: "1. キーとスケール", body: "GマイナーはBb長調の平行短調。ジャズではハーモニックマイナーが頻用されます。" },
+      { heading: "2. コード機能分析", body: "Cm7-F7はBb長調のIIm7-V7。Am7b5-D7はGmへのマイナーツーファイブです。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "長調と短調のツーファイブが連続する構造は、ジャズインプロの最重要教材です。" },
+      { heading: "4. 楽典的なポイント", body: "D7のF#音がGへの導音として強力に機能する、ハーモニックマイナー特有の解決です。" },
+      { heading: "5. 似た傾向の曲", body: "「Fly Me To The Moon」、「Blue Bossa」、「All The Things You Are」" },
+    ]
+  },
+  "planetary": {
+    title: "Planetary", artist: "Penthouse", key: "Dメジャー", bpm: 115, genre: "City Soul", cat: "JAZZ / CITY POP",
+    chords: "Bm7 Em7 GM7 D",
+    notes: "VIm7始まりのシティソウルループ",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Dメジャーの明るく開放的なキー。Bm7始まりが程よい陰影を加えます。" },
+      { heading: "2. コード機能分析", body: "VIm7-IIm7-IVM7-Iの循環。VIm始まりはJ-Popの「哀愁のイントロ」定番です。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "GM7の長7度が浮遊感を与え、繰り返しても飽きないループを実現しています。" },
+      { heading: "4. 楽典的なポイント", body: "トニックへの到達を遅らせる構造が、都会的な疾走感と切なさを両立させます。" },
+      { heading: "5. 似た傾向の曲", body: "「Could I Be Yours?」Penthouse、「Plastic Love」竹内まりや、「真夜中のドア」松原みき" },
+    ]
+  },
+  "flymetothemoon": {
+    title: "Fly Me To The Moon", artist: "(Jazz Standard)", key: "Cメジャー / Aマイナー", bpm: 120, genre: "Jazz", cat: "JAZZ / CITY POP",
+    chords: "Am7 Dm7 G7 CM7 FM7 Bm7b5 E7 Am7",
+    notes: "循環コードの完全形",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Aマイナーから始まりCメジャーを巡る、平行調を行き来する構造です。" },
+      { heading: "2. コード機能分析", body: "VIm7-IIm7-V7-IM7-IVM7-IIm7b5-V7-Imという4度進行の連鎖(循環コード)です。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "全てのコードが4度上行で繋がる、ジャズ和声の基本を全て含む教科書的進行です。" },
+      { heading: "4. 楽典的なポイント", body: "E7(セカンダリードミナント)のG#音がAmへの導音となり、円環を閉じます。" },
+      { heading: "5. 似た傾向の曲", body: "「Autumn Leaves」、「枯葉」、「I Will Survive」Gloria Gaynor(同型進行)" },
+    ]
+  },
+  "justthetwoofus": {
+    title: "Just the Two of Us", artist: "Grover Washington Jr.", key: "Abメジャー", bpm: 96, genre: "R&B / Jazz", cat: "JAZZ / CITY POP",
+    chords: "DbM7 C7 Fm7 Ebm7 Ab7",
+    notes: "「Just the Two of Us進行」の本家",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Abメジャー基調のスムースR&B。都会の夜を思わせる洗練された響きです。" },
+      { heading: "2. コード機能分析", body: "IVM7-III7-VIm7の進行にEbm7-Ab7(IIm7-V7 of IV)が続く循環構造です。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "III7(C7)のセカンダリードミナントがこの進行の核。世界中で愛用される黄金律です。" },
+      { heading: "4. 楽典的なポイント", body: "C7のE音がFmへ半音解決する瞬間の切なさが「おしゃれコード」の正体です。" },
+      { heading: "5. 似た傾向の曲", body: "「丸の内サディスティック」椎名林檎、「Isn't She Lovely」Stevie Wonder、「LOVE」嵐" },
+    ]
+  },
+  "plasticlove": {
+    title: "Plastic Love", artist: "竹内まりや", key: "Dマイナー", bpm: 102, genre: "City Pop", cat: "JAZZ / CITY POP",
+    chords: "Dm7 G7 CM7 FM7",
+    notes: "ツーファイブ基調のシティポップ(採譜による目安)",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Dマイナー系のシティポップ。夜のドライブが似合う都会的な哀愁を持ちます。" },
+      { heading: "2. コード機能分析", body: "IIm7-V7-IM7-IVM7的な4度進行の連鎖。ジャズ和声をポップに昇華した構造です。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "16ビートのカッティングギターとツーファイブ進行がシティポップの様式美です。" },
+      { heading: "4. 楽典的なポイント", body: "M7と7thコードの使い分けが、80年代東京の洗練と孤独を同時に描き出します。" },
+      { heading: "5. 似た傾向の曲", body: "「真夜中のドア」松原みき、「Ditto」NewJeans(リバイバル文脈)、「Planetary」Penthouse" },
+    ]
+  },
+  "mayonaka": {
+    title: "真夜中のドア〜Stay With Me", artist: "松原みき", key: "Aメジャー", bpm: 103, genre: "City Pop", cat: "JAZZ / CITY POP",
+    chords: "AM7 C#m7 F#m7 Bm7 E7",
+    notes: "メジャー7th基調のシティポップ(採譜による目安)",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Aメジャーの艶やかなキー。世界的リバイバルを起こしたシティポップの金字塔です。" },
+      { heading: "2. コード機能分析", body: "IM7-IIIm7-VIm7-IIm7-V7と下行する円環。ジャズの循環コードのポップ活用です。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "M7コードの連鎖と歯切れよいカッティングが、洗練された夜の空気を作ります。" },
+      { heading: "4. 楽典的なポイント", body: "IIIm7を経由する下行進行が、切なさを帯びたスムーズな流れを生んでいます。" },
+      { heading: "5. 似た傾向の曲", body: "「Plastic Love」竹内まりや、「Sparkle」山下達郎、「Planetary」Penthouse" },
+    ]
+  },
+  "takefive": {
+    title: "Take Five", artist: "Dave Brubeck", key: "Ebマイナー", bpm: 176, genre: "Jazz", cat: "JAZZ / CITY POP",
+    chords: "Ebm7 Bbm7 Ebm7 Bbm7",
+    notes: "5/4拍子の2コードヴァンプ",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Ebマイナーの神秘的な響き。史上最も有名な変拍子ジャズです。" },
+      { heading: "2. コード機能分析", body: "Im7-Vm7の2コード往復。和声を固定し5/4拍子のリズムを主役にした設計です。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "5/4拍子(3+2)の分割がスウィングに独特の推進力を与える、変拍子の入門曲です。" },
+      { heading: "4. 楽典的なポイント", body: "Vm7(ドミナントでなくマイナー)の使用がモーダルな浮遊感を保ち続けます。" },
+      { heading: "5. 似た傾向の曲", body: "「So What」Miles Davis、「Blue Rondo à la Turk」Dave Brubeck、「Mission Impossible」テーマ" },
+    ]
+  },
+  "sowhat": {
+    title: "So What", artist: "Miles Davis", key: "Dドリアン", bpm: 136, genre: "Modal Jazz", cat: "JAZZ / CITY POP",
+    chords: "Dm7 Dm7 Ebm7 Dm7",
+    notes: "モードジャズの原点",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Dドリアンモードの楽曲。コード進行ではなく「モード(旋法)」で構成された革命作です。" },
+      { heading: "2. コード機能分析", body: "Dm7を16小節、Ebm7を8小節、Dm7を8小節。機能和声を捨てた構造です。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "半音上への平行移動という大胆な転調が、モードジャズの自由を象徴します。" },
+      { heading: "4. 楽典的なポイント", body: "コードの解決に縛られず、スケール内での旋律創造に集中できる演奏環境を作りました。" },
+      { heading: "5. 似た傾向の曲", body: "「Impressions」John Coltrane、「Take Five」Dave Brubeck、「Maiden Voyage」Herbie Hancock" },
+    ]
+  },
+  "bluebossa": {
+    title: "Blue Bossa", artist: "Kenny Dorham", key: "Cマイナー", bpm: 140, genre: "Jazz / Bossa", cat: "JAZZ / CITY POP",
+    chords: "Cm7 Fm7 Dm7b5 G7 Cm7 EbM7 AbM7 Dm7b5 G7",
+    notes: "ボサノヴァ×ハードバップ",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Cマイナーのラテン風味あるジャズ。ボサノヴァのリズムとバップの和声の融合です。" },
+      { heading: "2. コード機能分析", body: "Im7-IVm7-IIm7b5-V7の短調ツーファイブに、DbへのIIm7-V7転調が挟まります。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "半音上のDbメジャーへの一時転調がこの曲のスパイス。すぐCmへ回帰します。" },
+      { heading: "4. 楽典的なポイント", body: "マイナーツーファイブ(IIm7b5-V7)の練習曲として世界中のジャズ学習者が演奏します。" },
+      { heading: "5. 似た傾向の曲", body: "「Autumn Leaves」、「Song for My Father」Horace Silver、「Recorda Me」Joe Henderson" },
+    ]
+  },
+  "isntshelovely": {
+    title: "Isn't She Lovely", artist: "Stevie Wonder", key: "Eメジャー", bpm: 118, genre: "Soul / R&B", cat: "JAZZ / CITY POP",
+    chords: "C#m7 F#7 B7 E",
+    notes: "VIm-II7-V7-Iの円環",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Eメジャーの祝福に満ちたキー。娘の誕生を祝う多幸感が和声にも表れています。" },
+      { heading: "2. コード機能分析", body: "VIm7-II7-V7-Iの循環。II7(F#7)はセカンダリードミナントでVへ強く進みます。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "ドミナントの連鎖(II7→V7→I)が生む推進力と、シャッフルビートの躍動が一体化します。" },
+      { heading: "4. 楽典的なポイント", body: "F#7のA#音がBへの導音となる連続解決が、止まらない喜びのループを作ります。" },
+      { heading: "5. 似た傾向の曲", body: "「Just the Two of Us」、「Sir Duke」Stevie Wonder、「丸の内サディスティック」椎名林檎" },
+    ]
+  },
+  "canon": {
+    title: "カノン進行", artist: "Pachelbel", key: "Dメジャー", bpm: 100, genre: "Classic / Pop", cat: "JAZZ / CITY POP",
+    chords: "D A Bm F#m G D G A",
+    notes: "I-V-VIm-IIIm-IV-I-IV-V",
+    analysis: [
+      { heading: "1. キーとスケール", body: "Dメジャーの堂々たる響き。1680年頃に確立され現代まで生き続ける進行です。" },
+      { heading: "2. コード機能分析", body: "I-V-VIm-IIIm-IV-I-IV-Vの8コード循環。全ての機能(T/S/D)を網羅します。" },
+      { heading: "3. 特徴的な進行・テクニック", body: "ベースの段階的下降(D-A-B-F#-G-D-G-A)と上声の対位法が構造美の核です。" },
+      { heading: "4. 楽典的なポイント", body: "この進行は「Let It Be」から現代J-Popまで無数の曲の骨格になっています。" },
+      { heading: "5. 似た傾向の曲", body: "「Let It Be」The Beatles、「チェリー」スピッツ、「クリスマス・イブ」山下達郎" },
+    ]
+  },
+};
+
+var SAMPLES = [
+  { header: "J-POP" },
+  { key: "lemon", label: "Lemon / 米津玄師" },
+  { key: "yoasobi", label: "夜に駆ける / YOASOBI" },
+  { key: "pretender", label: "Pretender / Official髭男dism" },
+  { key: "hakujitsu", label: "白日 / King Gnu" },
+  { key: "marigold", label: "マリーゴールド / あいみょん" },
+  { key: "dryflower", label: "ドライフラワー / 優里" },
+  { key: "cherry", label: "チェリー / スピッツ" },
+  { key: "uchiagehanabi", label: "打上花火 / DAOKO×米津玄師" },
+  { key: "marunouchi", label: "丸の内サディスティック / 椎名林檎" },
+  { key: "zankoku", label: "残酷な天使のテーゼ / 高橋洋子" },
+  { key: "idol", label: "アイドル / YOASOBI" },
+  { header: "K-POP" },
+  { key: "dynamite", label: "Dynamite / BTS" },
+  { key: "keepitshow", label: "Keep It Show / M.O.N.T" },
+  { key: "lovescenario", label: "LOVE SCENARIO / iKON" },
+  { key: "gangnam", label: "江南スタイル / PSY" },
+  { key: "butter", label: "Butter / BTS" },
+  { key: "supershy", label: "Super Shy / NewJeans" },
+  { key: "ditto", label: "Ditto / NewJeans" },
+  { key: "springday", label: "Spring Day / BTS" },
+  { header: "洋楽" },
+  { key: "shapeofyou", label: "Shape of You / Ed Sheeran" },
+  { key: "letitbe", label: "Let It Be / The Beatles" },
+  { key: "someonelikeyou", label: "Someone Like You / Adele" },
+  { key: "rollinginthedeep", label: "Rolling in the Deep / Adele" },
+  { key: "uptownfunk", label: "Uptown Funk / Mark Ronson ft. Bruno Mars" },
+  { key: "billiejean", label: "Billie Jean / Michael Jackson" },
+  { key: "perfect", label: "Perfect / Ed Sheeran" },
+  { key: "blindinglights", label: "Blinding Lights / The Weeknd" },
+  { key: "vivalavida", label: "Viva La Vida / Coldplay" },
+  { key: "staywithme", label: "Stay With Me / Sam Smith" },
+  { key: "allofme", label: "All of Me / John Legend" },
+  { header: "JAZZ / CITY POP" },
+  { key: "autumnleaves", label: "Autumn Leaves" },
+  { key: "planetary", label: "Planetary / Penthouse" },
+  { key: "flymetothemoon", label: "Fly Me To The Moon" },
+  { key: "justthetwoofus", label: "Just the Two of Us / Grover Washington Jr." },
+  { key: "plasticlove", label: "Plastic Love / 竹内まりや" },
+  { key: "mayonaka", label: "真夜中のドア〜Stay With Me / 松原みき" },
+  { key: "takefive", label: "Take Five / Dave Brubeck" },
+  { key: "sowhat", label: "So What / Miles Davis" },
+  { key: "bluebossa", label: "Blue Bossa / Kenny Dorham" },
+  { key: "isntshelovely", label: "Isn't She Lovely / Stevie Wonder" },
+  { key: "canon", label: "カノン進行 / Pachelbel" },
+];
+
+// ---- State ----
+var state = {
+  tab: "add",
+  songs: [],
+  expandedId: null,
+  showAnalysis: {},
+  apiKey: localStorage.getItem("rakkyoku_apikey") || "",
+  // add form
+  titleVal: "",
+  artistVal: "",
+  searching: false,
+  searchMsg: "",
+};
+
+// ---- Artwork (iTunes Search API - free, no key needed) ----
+var artworkCache = {};
+
+function fetchArtwork(title, artist, callback) {
+  var cacheKey = title + "|" + (artist || "");
+  if (artworkCache[cacheKey]) { callback(artworkCache[cacheKey]); return; }
+  var term = encodeURIComponent(title + " " + (artist || ""));
+  fetch("https://itunes.apple.com/search?term=" + term + "&country=jp&media=music&limit=1")
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var url = null;
+      if (d.results && d.results.length > 0 && d.results[0].artworkUrl100) {
+        url = d.results[0].artworkUrl100.replace("100x100", "300x300");
+      }
+      artworkCache[cacheKey] = url;
+      callback(url);
+    })
+    .catch(function() { callback(null); });
+}
+
+// ---- API ----
+function callClaude(prompt, apiKey) {
+  return fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1000,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.error) throw new Error(JSON.stringify(d.error));
+    return (d.content || []).map(function(b) { return b.text || ""; }).join("");
+  });
+}
+
+function fetchSongInfo(title, artist, apiKey) {
+  var query = artist ? title + " - " + artist : title;
+  var prompt = "楽曲「" + query + "」のコード進行・キー・BPM・ジャンルをJSONのみで返してください。マークダウン不要。形式: {\"chords\":\"Am F C G\",\"key\":\"Aマイナー\",\"bpm\":90,\"genre\":\"J-Pop\",\"notes\":\"サビの進行\"}。不明な項目はnullにしてください。";
+  return callClaude(prompt, apiKey).then(function(text) {
+    var info = { chords: null, key: null, bpm: null, genre: null, notes: null };
+    try {
+      var bt = String.fromCharCode(96);
+      var cleaned = text.replace(new RegExp(bt+bt+bt+"json|"+bt+bt+bt, "g"), "").trim();
+      var s = cleaned.indexOf("{"), e = cleaned.lastIndexOf("}");
+      if (s !== -1 && e !== -1) Object.assign(info, JSON.parse(cleaned.slice(s, e+1)));
+    } catch(e) {}
+    return info;
+  });
+}
+
+function analyzeTheory(song, apiKey) {
+  var lines = [
+    "以下の楽曲を楽典・音楽理論の観点から詳しく分析してください。",
+    "曲名: " + song.title, "アーティスト: " + (song.artist || "不明"),
+    "コード進行: " + (song.chords || "不明"), "キー: " + (song.key || "不明"),
+    "BPM: " + (song.bpm || "不明"), "ジャンル: " + (song.genre || "不明"), "",
+    "以下の観点で分析:",
+    "1. キーとスケール", "2. コード機能分析", "3. 特徴的な進行・テクニック",
+    "4. 楽典的なポイント", "5. 似た傾向を持つ曲・アーティスト",
+    "", "日本語で専門的かつ読みやすく書いてください。",
+  ];
+  return callClaude(lines.join("\n"), apiKey);
+}
+
+// ---- Helpers ----
+function parseChords(raw) {
+  if (!raw) return [];
+  return raw.trim().split(/[\s,|]+/).filter(function(s) { return s && s !== "-"; });
+}
+
+function el(tag, attrs, children) {
+  var e = document.createElement(tag);
+  if (attrs) Object.keys(attrs).forEach(function(k) {
+    if (k === "style") { Object.assign(e.style, attrs[k]); }
+    else if (k === "className") { e.className = attrs[k]; }
+    else if (k.startsWith("on")) { e.addEventListener(k.slice(2).toLowerCase(), attrs[k]); }
+    else { e.setAttribute(k, attrs[k]); }
+  });
+  if (children) {
+    (Array.isArray(children) ? children : [children]).forEach(function(c) {
+      if (c == null) return;
+      e.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+    });
+  }
+  return e;
+}
+
+function div(attrs, children) { return el("div", attrs, children); }
+function btn(attrs, children) { return el("button", attrs, children); }
+function span(attrs, children) { return el("span", attrs, children); }
+
+function badge(text, color) {
+  return span({ style: { background: color + "18", color: color, borderRadius: "7px", padding: "3px 9px", fontSize: "11px", fontWeight: "700" } }, [text]);
+}
+
+// ---- Render ----
+function render() {
+  var app = document.getElementById("app");
+  app.innerHTML = "";
+  app.appendChild(renderApp());
+}
+
+function renderApp() {
+  var wrap = div({ style: { minHeight: "100vh", background: "#F0F2FF" } }, [
+    div({ style: { maxWidth: "600px", margin: "0 auto", padding: "0 18px 80px" } }, [
+      renderHeader(),
+      renderApiSection(),
+      renderTabs(),
+      renderContent(),
+    ])
+  ]);
+  return wrap;
+}
+
+function renderHeader() {
+  return div({ style: { padding: "28px 0 16px", display: "flex", alignItems: "center", gap: "12px" } }, [
+    div({ style: { width: "42px", height: "42px", borderRadius: "13px", background: "linear-gradient(135deg,#5F27CD,#FF6B81)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 18px rgba(95,39,205,0.35)", flexShrink: "0" } }, [
+      span({ style: { color: "#fff", fontWeight: "800", fontSize: "20px" } }, ["&#9834;"])
+    ]),
+    div(null, [
+      div({ style: { fontSize: "21px", fontWeight: "800", color: "#1a1a2e", letterSpacing: "-0.5px" } }, ["楽曲分析"]),
+      div({ style: { fontSize: "10px", color: "#bbb", fontWeight: "600", letterSpacing: "1.5px" } }, ["MUSIC THEORY"]),
+    ])
+  ]);
+}
+
+function renderApiSection() {
+  var section = div({ id: "api-section" }, [
+    div({ style: { fontSize: "11px", fontWeight: "700", color: "#aaa", marginBottom: "6px" } }, ["Anthropic APIキー（任意 - AI自由入力機能を使う場合）"]),
+    div({ style: { display: "flex", gap: "8px" } }, [
+      el("input", {
+        type: "password",
+        value: state.apiKey,
+        placeholder: "sk-ant-...",
+        style: { flex: "1", border: "2px solid #eee", borderRadius: "10px", padding: "9px 12px", fontFamily: "Outfit, sans-serif", fontSize: "13px", background: "#fafafa", color: "#1a1a2e" },
+        onInput: function(e) {
+          state.apiKey = e.target.value;
+          localStorage.setItem("rakkyoku_apikey", e.target.value);
+        }
+      }),
+      btn({ style: { background: "#5F27CD22", border: "none", borderRadius: "10px", padding: "9px 14px", fontFamily: "Outfit, sans-serif", fontSize: "12px", color: "#5F27CD", cursor: "pointer", fontWeight: "700" },
+        onClick: function() { alert("APIキーを保存しました。ブラウザのlocalStorageに保存されます。"); }
+      }, ["保存"]),
+    ]),
+  ]);
+  return section;
+}
+
+function renderTabs() {
+  var items = [
+    { id: "add",     label: "追加",       count: 0 },
+    { id: "library", label: "ライブラリ", count: state.songs.length },
+    { id: "trend",   label: "傾向分析",   locked: state.songs.length < 2 },
+  ];
+  var wrap = div({ style: { display: "flex", background: "#fff", borderRadius: "16px", padding: "5px", gap: "4px", marginBottom: "20px", boxShadow: "0 2px 10px rgba(0,0,0,0.07)" } }, 
+    items.map(function(n) {
+      var active = state.tab === n.id;
+      var locked = !!n.locked;
+      var b = btn({
+        className: "tab-btn",
+        onClick: function() { if (!locked) { state.tab = n.id; render(); } },
+        style: { flex: "1", padding: "10px 6px", border: "none", borderRadius: "11px", cursor: locked ? "not-allowed" : "pointer", fontFamily: "Outfit, sans-serif", fontWeight: "700", fontSize: "13px",
+          background: active ? "#5F27CD" : "transparent",
+          color: locked ? "#ccc" : active ? "#fff" : "#999",
+          boxShadow: active ? "0 3px 12px rgba(95,39,205,0.28)" : "none",
+        }
+      }, [n.label]);
+      if (n.count > 0) {
+        b.appendChild(span({ style: { marginLeft: "5px", background: active ? "rgba(255,255,255,0.22)" : "#ede9ff", color: active ? "#fff" : "#5F27CD", borderRadius: "20px", padding: "1px 7px", fontSize: "11px" } }, [String(n.count)]));
+      }
+      return b;
+    })
+  );
+  return wrap;
+}
+
+function renderContent() {
+  var c = div({ className: "fade-up" });
+  if (state.tab === "add") c.appendChild(renderAddTab());
+  else if (state.tab === "library") c.appendChild(renderLibrary());
+  else if (state.tab === "trend") c.appendChild(renderTrend());
+  return c;
+}
+
+function renderAddTab() {
+  var wrap = div(null, []);
+
+  // Free input section (only if API key set)
+  if (state.apiKey) {
+    var card = div({ style: { background: "#fff", borderRadius: "22px", padding: "24px", boxShadow: "0 4px 22px rgba(0,0,0,0.07)", marginBottom: "14px" } }, [
+      div({ style: { fontSize: "17px", fontWeight: "800", color: "#1a1a2e", marginBottom: "3px" } }, ["曲名を入力して分析"]),
+      div({ style: { fontSize: "12px", color: "#bbb", marginBottom: "18px" } }, ["曲名を入れるとAIが自動分析します"]),
+    ]);
+
+    var titleInput = el("input", { type: "text", value: state.titleVal, placeholder: "例: Lemon", style: { width: "100%", border: "2px solid #eee", borderRadius: "12px", padding: "12px 15px", fontFamily: "Outfit, sans-serif", fontSize: "15px", background: "#fafafa", color: "#1a1a2e", marginBottom: "10px" } });
+    titleInput.addEventListener("input", function(e) { state.titleVal = e.target.value; });
+
+    var artistInput = el("input", { type: "text", value: state.artistVal, placeholder: "アーティスト名（任意）", style: { width: "100%", border: "2px solid #eee", borderRadius: "12px", padding: "12px 15px", fontFamily: "Outfit, sans-serif", fontSize: "15px", background: "#fafafa", color: "#1a1a2e", marginBottom: "14px" } });
+    artistInput.addEventListener("input", function(e) { state.artistVal = e.target.value; });
+
+    var msgDiv = div({ style: { fontSize: "13px", color: "#5F27CD", fontWeight: "600", padding: "10px 14px", background: "#f4f0ff", borderRadius: "10px", marginBottom: "12px", display: state.searchMsg ? "block" : "none" } }, [state.searchMsg]);
+
+    var addBtn = btn({
+      style: { width: "100%", padding: "14px", border: "none", borderRadius: "14px", fontFamily: "Outfit, sans-serif", fontWeight: "800", fontSize: "16px", cursor: "pointer", background: "linear-gradient(135deg,#5F27CD,#FF6B81)", color: "#fff", boxShadow: "0 5px 20px rgba(95,39,205,0.35)" },
+      onClick: function() {
+        var t = titleInput.value.trim();
+        if (!t || state.searching) return;
+        state.searching = true;
+        state.searchMsg = "AIが分析中...";
+        msgDiv.style.display = "block";
+        msgDiv.textContent = "AIが分析中...";
+        addBtn.disabled = true;
+        fetchSongInfo(t, artistInput.value.trim(), state.apiKey).then(function(info) {
+          var id = Date.now();
+          var song = { id: id, title: t, artist: artistInput.value.trim(), chords: info.chords || "", key: info.key || "", bpm: info.bpm, genre: info.genre || "", notes: info.notes || "", chordList: parseChords(info.chords || ""), color: PALETTE[state.songs.length % PALETTE.length], analysis: null };
+          state.songs.push(song);
+          state.expandedId = id;
+          state.tab = "library";
+          state.titleVal = "";
+          state.artistVal = "";
+          state.searching = false;
+          state.searchMsg = "";
+          render();
+        }).catch(function(e) {
+          state.searching = false;
+          msgDiv.textContent = "エラー: " + e.message;
+          addBtn.disabled = false;
+        });
+      }
+    }, ["分析スタート"]);
+
+    card.appendChild(titleInput);
+    card.appendChild(artistInput);
+    card.appendChild(msgDiv);
+    card.appendChild(addBtn);
+    wrap.appendChild(card);
+  }
+
+  // Sample songs
+  var sampleCard = div({ style: { background: "#fff", borderRadius: "22px", padding: "24px", boxShadow: "0 4px 22px rgba(0,0,0,0.07)" } }, [
+    div({ style: { fontSize: "17px", fontWeight: "800", color: "#1a1a2e", marginBottom: "3px" } }, ["サンプル曲を選ぶ"]),
+    div({ style: { fontSize: "12px", color: "#bbb", marginBottom: "18px" } }, ["タップするとライブラリに追加されます"]),
+  ]);
+
+  var colorIdx = 0;
+  SAMPLES.forEach(function(s, i) {
+    if (s.header) {
+      sampleCard.appendChild(div({ style: { fontSize: "11px", fontWeight: "800", color: "#5F27CD", letterSpacing: "2px", margin: "16px 0 8px", paddingBottom: "4px", borderBottom: "2px solid #ede9ff" } }, [s.header]));
+      return;
+    }
+    var data = SONG_DB[s.key];
+    if (!data) return;
+    var i2 = colorIdx++;
+    var color = PALETTE[i2 % PALETTE.length];
+    var added = state.songs.find(function(x) { return x.dbKey === s.key; });
+    var row = btn({
+      className: "sample-btn",
+      style: { display: "flex", alignItems: "center", gap: "14px", padding: "14px 16px", background: added ? color + "12" : "#fafafa", border: "1.5px solid " + (added ? color + "44" : "#f0f0f0"), borderRadius: "14px", cursor: "pointer", width: "100%", textAlign: "left", marginBottom: "8px", fontFamily: "Outfit, sans-serif", "--color": color },
+      onClick: function() {
+        if (added) { state.expandedId = added.id; state.tab = "library"; render(); return; }
+        var id = Date.now();
+        var song = Object.assign({}, data, { id: id, dbKey: s.key, chordList: parseChords(data.chords), color: color, aiAnalysis: null });
+        state.songs.push(song);
+        state.expandedId = id;
+        state.tab = "library";
+        render();
+      }
+    }, [
+      (function() {
+        var iconBox = div({ style: { width: "40px", height: "40px", borderRadius: "11px", background: color + "20", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: "0", fontSize: "18px", color: color, overflow: "hidden" } }, ["♪"]);
+        fetchArtwork(data.title, data.artist, function(url) {
+          if (url) {
+            iconBox.innerHTML = "";
+            iconBox.appendChild(el("img", { src: url, style: { width: "100%", height: "100%", objectFit: "cover" } }));
+          }
+        });
+        return iconBox;
+      })(),
+      div({ style: { flex: "1", minWidth: "0" } }, [
+        div({ style: { fontSize: "14px", fontWeight: "700", color: "#1a1a2e" } }, [data.title]),
+        div({ style: { fontSize: "11px", color: "#bbb", marginTop: "2px" } }, [data.artist || "Standard"]),
+      ]),
+      div({ style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "3px", flexShrink: "0" } }, [
+        span({ style: { background: color + "18", color: color, borderRadius: "7px", padding: "2px 9px", fontSize: "11px", fontWeight: "700" } }, [data.key.split(" ")[0]]),
+        added ? span({ style: { fontSize: "10px", color: color, fontWeight: "700" } }, ["追加済"]) : null,
+      ].filter(Boolean)),
+    ]);
+    sampleCard.appendChild(row);
+  });
+
+  wrap.appendChild(sampleCard);
+  return wrap;
+}
+
+function renderLibrary() {
+  if (state.songs.length === 0) {
+    return div({ style: { background: "#fff", borderRadius: "22px", padding: "56px 20px", textAlign: "center", boxShadow: "0 4px 22px rgba(0,0,0,0.07)" } }, [
+      div({ style: { fontSize: "40px", marginBottom: "10px" } }, ["♫"]),
+      div({ style: { fontSize: "15px", fontWeight: "700", color: "#ccc", marginBottom: "14px" } }, ["まだ曲がありません"]),
+      btn({ style: { background: "linear-gradient(135deg,#5F27CD,#FF6B81)", border: "none", borderRadius: "12px", padding: "11px 22px", fontFamily: "Outfit, sans-serif", fontWeight: "700", fontSize: "13px", color: "#fff", cursor: "pointer" }, onClick: function() { state.tab = "add"; render(); } }, ["+ 曲を選ぶ"]),
+    ]);
+  }
+
+  var list = div({ style: { display: "flex", flexDirection: "column", gap: "10px" } });
+  state.songs.forEach(function(song) {
+    list.appendChild(renderSongCard(song));
+  });
+  return list;
+}
+
+function renderSongCard(song) {
+  var open = state.expandedId === song.id;
+  var card = div({ style: { background: "#fff", borderRadius: "18px", overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.07)" }, className: "pop" });
+
+  var header = div({
+    className: "song-row",
+    style: { display: "flex", alignItems: "center", gap: "13px", padding: "15px 18px", cursor: "pointer", transition: "background 0.15s" },
+    onClick: function() { state.expandedId = open ? null : song.id; render(); }
+  }, [
+    (function() {
+      var iconBox = div({ style: { width: "40px", height: "40px", borderRadius: "11px", background: song.color + "20", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: "0", fontSize: "18px", color: song.color, overflow: "hidden" } }, ["♪"]);
+      fetchArtwork(song.title, song.artist, function(url) {
+        if (url) {
+          iconBox.innerHTML = "";
+          iconBox.appendChild(el("img", { src: url, style: { width: "100%", height: "100%", objectFit: "cover" } }));
+        }
+      });
+      return iconBox;
+    })(),
+    div({ style: { flex: "1", minWidth: "0" } }, [
+      div({ style: { fontSize: "14px", fontWeight: "700", color: "#1a1a2e", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, [song.title]),
+      div({ style: { fontSize: "11px", color: "#bbb", marginTop: "2px" } }, [song.artist || "Standard"]),
+    ]),
+    div({ style: { display: "flex", gap: "5px", flexShrink: "0" } }, [
+      song.key ? badge(song.key.split(" ")[0], song.color) : null,
+      song.bpm ? span({ style: { background: "#f5f5f5", color: "#bbb", borderRadius: "7px", padding: "3px 9px", fontSize: "11px" } }, [song.bpm + "BPM"]) : null,
+    ].filter(Boolean)),
+    btn({
+      style: { background: "none", border: "none", color: "#e0e0e0", cursor: "pointer", fontSize: "16px", padding: "2px 5px", lineHeight: "1", flexShrink: "0" },
+      onClick: function(e) {
+        e.stopPropagation();
+        state.songs = state.songs.filter(function(s) { return s.id !== song.id; });
+        if (state.expandedId === song.id) state.expandedId = null;
+        render();
+      }
+    }, ["x"]),
+    span({ style: { color: "#ccc", fontSize: "11px", flexShrink: "0" } }, [open ? "v" : ">"]),
+  ]);
+  card.appendChild(header);
+
+  if (open) {
+    var body = div({ style: { padding: "0 18px 18px" } });
+    body.appendChild(div({ style: { height: "1px", background: "#f5f5f5", marginBottom: "14px" } }));
+
+    if (song.chordList && song.chordList.length > 0) {
+      var chordWrap = div({ style: { marginBottom: "14px" } }, [
+        div({ style: { fontSize: "9px", fontWeight: "700", color: "#ddd", letterSpacing: "2px", marginBottom: "9px" } }, ["CHORD PROGRESSION"]),
+        div({ style: { display: "flex", flexWrap: "wrap", gap: "7px" } },
+          song.chordList.map(function(ch) {
+            return span({ style: { background: song.color + "14", border: "1.5px solid " + song.color + "38", borderRadius: "9px", padding: "6px 12px", fontSize: "14px", fontWeight: "700", color: song.color } }, [ch]);
+          })
+        )
+      ]);
+      body.appendChild(chordWrap);
+    }
+
+    var tags = div({ style: { display: "flex", gap: "7px", flexWrap: "wrap", marginBottom: "14px" } });
+    if (song.genre) tags.appendChild(span({ style: { background: "#f5f5f5", borderRadius: "7px", padding: "4px 11px", fontSize: "11px", color: "#999", fontWeight: "600" } }, [song.genre]));
+    if (song.key) tags.appendChild(span({ style: { background: "#f5f5f5", borderRadius: "7px", padding: "4px 11px", fontSize: "11px", color: "#999", fontWeight: "600" } }, [song.key]));
+    if (song.notes) tags.appendChild(span({ style: { background: "#fffbf0", borderRadius: "7px", padding: "4px 11px", fontSize: "11px", color: "#cc9900", fontWeight: "600" } }, [song.notes]));
+    body.appendChild(tags);
+
+    // Analysis button
+    var analysisDiv = div({ style: { marginTop: "12px", background: "#fafafa", borderRadius: "12px", padding: "16px", display: "none" } });
+
+    if (song.analysis) {
+      song.analysis.forEach(function(item) {
+        analysisDiv.appendChild(div({ style: { marginBottom: "12px" } }, [
+          div({ style: { fontSize: "12px", fontWeight: "800", color: song.color, marginBottom: "4px" } }, [item.heading]),
+          div({ style: { fontSize: "12px", lineHeight: "1.85", color: "#555" } }, [item.body]),
+        ]));
+      });
+      analysisDiv.style.display = "block";
+    } else if (song.aiAnalysis) {
+      var lines = song.aiAnalysis.split("\n");
+      lines.forEach(function(line) {
+        if (!line.trim()) return;
+        var isHeading = /^\d+\.\s.{1,30}$/.test(line.trim());
+        analysisDiv.appendChild(div({ style: { fontSize: isHeading ? "13px" : "12px", fontWeight: isHeading ? "800" : "400", color: isHeading ? song.color : "#555", marginTop: isHeading ? "14px" : "0", lineHeight: "1.85" } }, [line]));
+      });
+      analysisDiv.style.display = "block";
+    }
+
+    var analysisBtn = btn({
+      style: { width: "100%", padding: "12px", border: "none", borderRadius: "12px", fontFamily: "Outfit, sans-serif", fontWeight: "700", fontSize: "14px", cursor: "pointer", background: song.color + "16", color: song.color },
+      onClick: function() {
+        if (song.analysis || song.aiAnalysis) {
+          analysisDiv.style.display = analysisDiv.style.display === "none" ? "block" : "none";
+          analysisBtn.textContent = analysisDiv.style.display === "none" ? "楽典・理論分析を見る" : "閉じる";
+          return;
+        }
+        if (!state.apiKey) { alert("AI分析にはAPIキーが必要です。ページ上部に入力してください。"); return; }
+        analysisBtn.textContent = "分析中...";
+        analysisBtn.disabled = true;
+        analyzeTheory(song, state.apiKey).then(function(text) {
+          song.aiAnalysis = text;
+          var lines2 = text.split("\n");
+          lines2.forEach(function(line) {
+            if (!line.trim()) return;
+            var isH = /^\d+\.\s.{1,30}$/.test(line.trim());
+            analysisDiv.appendChild(div({ style: { fontSize: isH ? "13px" : "12px", fontWeight: isH ? "800" : "400", color: isH ? song.color : "#555", marginTop: isH ? "14px" : "0", lineHeight: "1.85" } }, [line]));
+          });
+          analysisDiv.style.display = "block";
+          analysisBtn.textContent = "閉じる";
+          analysisBtn.disabled = false;
+        }).catch(function(e) {
+          analysisBtn.textContent = "エラー: " + e.message.slice(0, 40);
+          analysisBtn.disabled = false;
+        });
+      }
+    }, ["楽典・理論分析を見る"]);
+
+    body.appendChild(analysisBtn);
+    body.appendChild(analysisDiv);
+    card.appendChild(body);
+  }
+  return card;
+}
+
+function renderTrend() {
+  var wrap = div({ style: { display: "flex", flexDirection: "column", gap: "13px" } });
+
+  var listCard = div({ style: { background: "#fff", borderRadius: "22px", padding: "20px", boxShadow: "0 4px 22px rgba(0,0,0,0.07)" } }, [
+    div({ style: { fontSize: "15px", fontWeight: "800", color: "#1a1a2e", marginBottom: "12px" } }, ["登録中の曲"]),
+  ]);
+  state.songs.forEach(function(s) {
+    listCard.appendChild(div({ style: { display: "flex", alignItems: "center", gap: "10px", padding: "9px 13px", background: "#fafafa", borderRadius: "11px", marginBottom: "7px" } }, [
+      div({ style: { width: "7px", height: "7px", borderRadius: "50%", background: s.color, flexShrink: "0" } }),
+      div({ style: { flex: "1" } }, [
+        span({ style: { fontWeight: "700", fontSize: "13px", color: "#1a1a2e" } }, [s.title]),
+        span({ style: { fontSize: "11px", color: "#bbb", marginLeft: "7px" } }, [s.artist || ""]),
+      ]),
+      s.key ? span({ style: { fontSize: "11px", fontWeight: "700", color: s.color } }, [s.key.split(" ")[0]]) : null,
+    ].filter(Boolean)));
+  });
+  wrap.appendChild(listCard);
+
+  var minorCount = state.songs.filter(function(s) { return s.key && (s.key.indexOf("マイナー") !== -1 || (s.key.split(" ")[0] || "").endsWith("m")); }).length;
+  var majorCount = state.songs.length - minorCount;
+  var genres = {}; state.songs.forEach(function(s) { if (s.genre) genres[s.genre] = (genres[s.genre] || 0) + 1; });
+  var topGenre = Object.entries(genres).sort(function(a,b){return b[1]-a[1];})[0];
+  var avgBpm = Math.round(state.songs.reduce(function(a,s){return a+(s.bpm||100);},0)/state.songs.length);
+
+  var statsCard = div({ style: { background: "#fff", borderRadius: "22px", padding: "22px", boxShadow: "0 4px 22px rgba(0,0,0,0.07)" } }, [
+    div({ style: { fontSize: "15px", fontWeight: "800", color: "#5F27CD", marginBottom: "16px" } }, ["統計サマリー"]),
+    div({ style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "16px" } },
+      [
+        ["メジャー", majorCount + "曲", "#54A0FF"],
+        ["マイナー", minorCount + "曲", "#FF6B81"],
+        ["平均BPM", String(avgBpm), "#FF9F43"],
+        ["人気ジャンル", topGenre ? topGenre[0] : "-", "#1DD1A1"],
+      ].map(function(item) {
+        return div({ style: { background: item[2] + "12", borderRadius: "12px", padding: "12px 14px" } }, [
+          div({ style: { fontSize: "10px", color: item[2], fontWeight: "700", letterSpacing: "1px", marginBottom: "4px" } }, [item[0]]),
+          div({ style: { fontSize: "20px", fontWeight: "800", color: item[2] } }, [item[1]]),
+        ]);
+      })
+    ),
+    div({ style: { background: "#fafafa", borderRadius: "14px", padding: "16px" } }, [
+      div({ style: { fontSize: "12px", fontWeight: "800", color: "#5F27CD", marginBottom: "8px" } }, ["傾向コメント"]),
+      div({ style: { fontSize: "12px", lineHeight: "1.85", color: "#555" } }, [
+        minorCount > majorCount ? "マイナー系の曲が多く、内省的・感情的な音楽を好む傾向があります。" :
+        majorCount > minorCount ? "メジャー系の曲が多く、明るく前向きな音楽を好む傾向があります。" :
+        "メジャー・マイナーをバランスよく好む傾向があります。"
+      ]),
+    ]),
+  ]);
+  wrap.appendChild(statsCard);
+  return wrap;
+}
+
+render();
+</script>
+</body>
+</html>
