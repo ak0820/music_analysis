@@ -4,27 +4,256 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>楽曲分析</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+:root {
+  --paper: #FAFAFA;
+  --ink: #1A1915;
+  --blue: #274690;
+  --minor: #8E3B4A;
+  --muted: #8F8D84;
+  --line: #E8E8E6;
+  --hover: #F2F2F1;
+}
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #F0F2FF; font-family: Outfit, sans-serif; }
-@keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
-@keyframes pop { 0%{transform:scale(0.93);opacity:0} 100%{transform:scale(1);opacity:1} }
-.fade-up { animation: fadeUp 0.28s ease; }
-.pop { animation: pop 0.25s ease; }
-input:focus { outline: none; border-color: #5F27CD !important; }
-.song-row:hover { background: #fafaff !important; }
-.sample-btn:hover { border-color: var(--color) !important; }
-.tab-btn { transition: all 0.18s; }
-#api-section { border-bottom: 1px solid #e8e8f0; padding-bottom: 16px; margin-bottom: 20px; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, 'Yu Gothic UI', sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.wrap { max-width: 620px; margin: 0 auto; padding: 0 22px 100px; }
+
+/* Header */
+.masthead { padding: 52px 0 0; }
+.masthead h1 {
+  font-family: 'Inter', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, 'Yu Gothic UI', sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+.masthead .sub {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.32em;
+  color: var(--muted);
+  margin-top: 10px;
+  text-transform: uppercase;
+}
+.masthead .rule { height: 2px; background: var(--blue); margin-top: 22px; }
+
+/* Tabs */
+.tabs { display: flex; gap: 26px; padding: 16px 0 0; border-bottom: 1px solid var(--line); }
+.tab {
+  background: none; border: none; cursor: pointer;
+  font-family: 'Inter', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, 'Yu Gothic UI', sans-serif;
+  font-size: 13px; font-weight: 500;
+  color: var(--muted);
+  padding: 6px 0 12px;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color .15s;
+}
+.tab:hover { color: var(--ink); }
+.tab.active { color: var(--ink); border-bottom-color: var(--blue); }
+.tab.locked { color: #C9C7BE; cursor: default; }
+.tab .n { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--blue); margin-left: 5px; }
+
+/* Section labels */
+.genre-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  color: var(--blue);
+  margin: 34px 0 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* Song rows */
+.row {
+  display: flex; align-items: center; gap: 14px;
+  width: 100%; text-align: left;
+  background: none; border: none; cursor: pointer;
+  padding: 13px 2px;
+  border-bottom: 1px solid var(--line);
+  font-family: 'Inter', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, 'Yu Gothic UI', sans-serif;
+  transition: background .12s;
+}
+.row:hover { background: var(--hover); }
+.art {
+  width: 40px; height: 40px; flex-shrink: 0;
+  border-radius: 2px;
+  background: #ECECEA;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  color: #B9B6AA; font-size: 16px;
+}
+.art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.row .meta { flex: 1; min-width: 0; }
+.row .t { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .a { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.row .keybpm {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  flex-shrink: 0; text-align: right; line-height: 1.5;
+}
+.row .keybpm div:nth-child(2) { color: var(--muted); }
+.key-major { color: var(--blue); }
+.key-minor { color: var(--minor); }
+.legend {
+  display: flex; gap: 18px; padding: 14px 2px 0;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; letter-spacing: 0.12em; color: var(--muted);
+}
+.legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+.legend .dot.mj { background: var(--blue); }
+.legend .dot.mn { background: var(--minor); }
+.chordsheet.minor { color: var(--minor); border-top-color: var(--minor); border-bottom-color: var(--minor); }
+.chordsheet.minor .bar { color: #D6AEB6; }
+.row .added { color: var(--blue); font-size: 10px; }
+.row .del {
+  background: none; border: none; color: #C9C7BE; cursor: pointer;
+  font-size: 15px; padding: 4px 6px; line-height: 1; flex-shrink: 0;
+}
+.row .del:hover { color: var(--ink); }
+
+/* Expanded panel */
+.panel { padding: 20px 2px 30px; border-bottom: 1px solid var(--line); }
+.chordsheet {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 16px 4px;
+  border-top: 2px solid var(--blue);
+  border-bottom: 1px solid var(--blue);
+  color: var(--blue);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.chordsheet .bar { color: #A9B4D6; margin: 0 8px; }
+.metaline {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; color: var(--muted);
+  margin-top: 12px;
+}
+.notes { font-size: 12px; color: var(--muted); font-style: italic; margin-top: 6px; }
+.readbtn {
+  display: inline-block;
+  margin-top: 20px;
+  background: none;
+  border: 1px solid var(--blue);
+  padding: 10px 22px;
+  font-family: 'Inter', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, 'Yu Gothic UI', sans-serif;
+  font-size: 12px; font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--blue);
+  cursor: pointer;
+  transition: all .15s;
+}
+.readbtn:hover { background: var(--blue); color: #fff; }
+.readbtn:disabled { border-color: var(--line); color: var(--muted); cursor: default; }
+.analysis { margin-top: 24px; }
+.analysis h3 {
+  font-size: 14px; font-weight: 700;
+  margin: 22px 0 6px;
+  padding-left: 12px;
+  border-left: 3px solid var(--blue);
+}
+.analysis p { font-size: 13px; line-height: 2; color: #46443C; }
+
+/* Add tab: AI input */
+.ai-form { margin-top: 30px; }
+.ai-form input[type=text] {
+  width: 100%;
+  border: none; border-bottom: 1px solid var(--ink);
+  background: transparent;
+  padding: 10px 2px;
+  font-family: 'Inter', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, 'Yu Gothic UI', sans-serif;
+  font-size: 15px;
+  color: var(--ink);
+  margin-bottom: 14px;
+}
+.ai-form input:focus { outline: none; border-bottom-color: var(--blue); }
+.ai-form input::placeholder { color: #C2C0B6; }
+.status { font-size: 12px; color: var(--blue); margin: 8px 0; }
+
+/* Settings */
+details.settings { margin-top: 60px; border-top: 1px solid var(--line); padding-top: 18px; }
+details.settings summary {
+  font-size: 11px; color: var(--muted); cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.15em;
+  list-style: none;
+}
+details.settings summary::-webkit-details-marker { display: none; }
+details.settings summary::before { content: '+ '; color: var(--blue); }
+details[open].settings summary::before { content: '− '; }
+details.settings .inner { padding: 16px 0 4px; }
+details.settings input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 10px 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+}
+details.settings .hint { font-size: 11px; color: var(--muted); margin-top: 8px; line-height: 1.8; }
+
+/* Trend */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 30px; border-top: 2px solid var(--blue); border-bottom: 1px solid var(--line); }
+.stat { padding: 18px 8px 16px; border-right: 1px solid var(--line); }
+.stat:last-child { border-right: none; }
+.stat .v { font-family: 'Inter', sans-serif; font-size: 26px; font-weight: 700; line-height: 1; color: var(--blue); }
+.stat .v.mn { color: var(--minor); }
+.stat .l { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.18em; color: var(--muted); margin-top: 8px; }
+.trend-list { margin-top: 34px; }
+.trend-comment { margin-top: 34px; padding: 20px 0; border-top: 2px solid var(--blue); }
+.trend-comment h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+.trend-comment p { font-size: 13px; line-height: 2; color: #46443C; }
+
+.empty { padding: 70px 0; text-align: center; }
+.empty .mark { font-size: 30px; color: #C9C7BE; }
+.empty p { font-size: 12px; color: var(--muted); margin-top: 12px; }
+.empty button {
+  margin-top: 20px;
+  background: none; border: 1px solid var(--blue);
+  color: var(--blue);
+  padding: 10px 24px; font-size: 12px; cursor: pointer;
+  font-family: 'Inter', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, 'Yu Gothic UI', sans-serif;
+  letter-spacing: 0.1em;
+}
+.empty button:hover { background: var(--blue); color: #fff; }
+
+.fade { animation: fade .3s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .fade { animation: none; } }
+@media (max-width: 480px) {
+  .masthead h1 { font-size: 28px; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .stat:nth-child(2) { border-right: none; }
+  .stat:nth-child(3), .stat:nth-child(4) { border-top: 1px solid var(--line); }
+}
+button:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 </style>
 </head>
 <body>
-<div id="app"></div>
+<div class="wrap">
+  <header class="masthead">
+    <h1>楽曲分析</h1>
+    <div class="sub">Chord &amp; Theory Notes</div>
+    <div class="rule"></div>
+  </header>
+  <nav class="tabs" id="tabs"></nav>
+  <main id="content"></main>
+</div>
 
 <script>
-var PALETTE = ["#FF6B6B","#FF9F43","#54A0FF","#5F27CD","#00D2D3","#FF6B81","#1DD1A1","#FECA57"];
-
 var SONG_DB = {
   "lemon": {
     title: "Lemon", artist: "米津玄師", key: "Dbメジャー / Bbマイナー", bpm: 84, genre: "J-Pop", cat: "J-POP",
@@ -582,12 +811,21 @@ var state = {
   searchMsg: "",
 };
 
-// ---- Artwork (iTunes Search API - free, no key needed) ----
-var artworkCache = {};
 
+// ---- State ----
+var state = {
+  tab: "add",
+  songs: [],
+  expandedId: null,
+  apiKey: localStorage.getItem("rakkyoku_apikey") || "",
+  searching: false,
+};
+
+// ---- Artwork (iTunes Search API - free, no key) ----
+var artworkCache = {};
 function fetchArtwork(title, artist, callback) {
   var cacheKey = title + "|" + (artist || "");
-  if (artworkCache[cacheKey]) { callback(artworkCache[cacheKey]); return; }
+  if (cacheKey in artworkCache) { callback(artworkCache[cacheKey]); return; }
   var term = encodeURIComponent(title + " " + (artist || ""));
   fetch("https://itunes.apple.com/search?term=" + term + "&country=jp&media=music&limit=1")
     .then(function(r) { return r.json(); })
@@ -599,10 +837,10 @@ function fetchArtwork(title, artist, callback) {
       artworkCache[cacheKey] = url;
       callback(url);
     })
-    .catch(function() { callback(null); });
+    .catch(function() { artworkCache[cacheKey] = null; callback(null); });
 }
 
-// ---- API ----
+// ---- Claude API (optional) ----
 function callClaude(prompt, apiKey) {
   return fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -618,18 +856,18 @@ function callClaude(prompt, apiKey) {
       messages: [{ role: "user", content: prompt }],
     }),
   }).then(function(r) { return r.json(); }).then(function(d) {
-    if (d.error) throw new Error(JSON.stringify(d.error));
+    if (d.error) throw new Error(typeof d.error === "string" ? d.error : (d.error.message || "APIエラー"));
     return (d.content || []).map(function(b) { return b.text || ""; }).join("");
   });
 }
 
 function fetchSongInfo(title, artist, apiKey) {
-  var query = artist ? title + " - " + artist : title;
-  var prompt = "楽曲「" + query + "」のコード進行・キー・BPM・ジャンルをJSONのみで返してください。マークダウン不要。形式: {\"chords\":\"Am F C G\",\"key\":\"Aマイナー\",\"bpm\":90,\"genre\":\"J-Pop\",\"notes\":\"サビの進行\"}。不明な項目はnullにしてください。";
+  var q = artist ? title + " - " + artist : title;
+  var bt = String.fromCharCode(96);
+  var prompt = "楽曲「" + q + "」のコード進行・キー・BPM・ジャンルをJSONのみで返してください。形式: {\"chords\":\"Am F C G\",\"key\":\"Aマイナー\",\"bpm\":90,\"genre\":\"J-Pop\",\"notes\":\"サビの進行\"}。不明はnull。";
   return callClaude(prompt, apiKey).then(function(text) {
     var info = { chords: null, key: null, bpm: null, genre: null, notes: null };
     try {
-      var bt = String.fromCharCode(96);
       var cleaned = text.replace(new RegExp(bt+bt+bt+"json|"+bt+bt+bt, "g"), "").trim();
       var s = cleaned.indexOf("{"), e = cleaned.lastIndexOf("}");
       if (s !== -1 && e !== -1) Object.assign(info, JSON.parse(cleaned.slice(s, e+1)));
@@ -640,14 +878,12 @@ function fetchSongInfo(title, artist, apiKey) {
 
 function analyzeTheory(song, apiKey) {
   var lines = [
-    "以下の楽曲を楽典・音楽理論の観点から詳しく分析してください。",
+    "以下の楽曲を楽典・音楽理論の観点から分析してください。",
     "曲名: " + song.title, "アーティスト: " + (song.artist || "不明"),
     "コード進行: " + (song.chords || "不明"), "キー: " + (song.key || "不明"),
-    "BPM: " + (song.bpm || "不明"), "ジャンル: " + (song.genre || "不明"), "",
-    "以下の観点で分析:",
-    "1. キーとスケール", "2. コード機能分析", "3. 特徴的な進行・テクニック",
-    "4. 楽典的なポイント", "5. 似た傾向を持つ曲・アーティスト",
-    "", "日本語で専門的かつ読みやすく書いてください。",
+    "BPM: " + (song.bpm || "不明"), "",
+    "観点: 1.キーとスケール 2.コード機能 3.特徴的な進行 4.楽典的ポイント 5.似た曲",
+    "各観点を「1. キーとスケール」のような見出し行で始め、日本語で簡潔に。",
   ];
   return callClaude(lines.join("\n"), apiKey);
 }
@@ -658,418 +894,339 @@ function parseChords(raw) {
   return raw.trim().split(/[\s,|]+/).filter(function(s) { return s && s !== "-"; });
 }
 
-function el(tag, attrs, children) {
+function isMinor(keyStr) {
+  var t = (keyStr || "").split("/")[0].trim().split(" ")[0];
+  if (t.indexOf("マイナー") !== -1) return true;
+  if (t.indexOf("ドリアン") !== -1) return true;
+  if (/[A-G][#b]?m$/.test(t)) return true;
+  return false;
+}
+
+function chordBars(list) {
+  var out = [];
+  for (var i = 0; i < list.length; i += 2) {
+    out.push(list.slice(i, i + 2).join("\u2002"));
+  }
+  return out;
+}
+
+function el(tag, cls, children, attrs) {
   var e = document.createElement(tag);
-  if (attrs) Object.keys(attrs).forEach(function(k) {
-    if (k === "style") { Object.assign(e.style, attrs[k]); }
-    else if (k === "className") { e.className = attrs[k]; }
-    else if (k.startsWith("on")) { e.addEventListener(k.slice(2).toLowerCase(), attrs[k]); }
-    else { e.setAttribute(k, attrs[k]); }
-  });
-  if (children) {
+  if (cls) e.className = cls;
+  if (children != null) {
     (Array.isArray(children) ? children : [children]).forEach(function(c) {
       if (c == null) return;
       e.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
     });
   }
+  if (attrs) Object.keys(attrs).forEach(function(k) {
+    if (k.slice(0,2) === "on") e.addEventListener(k.slice(2), attrs[k]);
+    else e.setAttribute(k, attrs[k]);
+  });
   return e;
 }
 
-function div(attrs, children) { return el("div", attrs, children); }
-function btn(attrs, children) { return el("button", attrs, children); }
-function span(attrs, children) { return el("span", attrs, children); }
-
-function badge(text, color) {
-  return span({ style: { background: color + "18", color: color, borderRadius: "7px", padding: "3px 9px", fontSize: "11px", fontWeight: "700" } }, [text]);
+function artBox(title, artist) {
+  var box = el("div", "art", ["\u266a"]);
+  fetchArtwork(title, artist, function(url) {
+    if (url) {
+      box.textContent = "";
+      box.appendChild(el("img", null, null, { src: url, alt: "" }));
+    }
+  });
+  return box;
 }
 
 // ---- Render ----
 function render() {
-  var app = document.getElementById("app");
-  app.innerHTML = "";
-  app.appendChild(renderApp());
-}
-
-function renderApp() {
-  var wrap = div({ style: { minHeight: "100vh", background: "#F0F2FF" } }, [
-    div({ style: { maxWidth: "600px", margin: "0 auto", padding: "0 18px 80px" } }, [
-      renderHeader(),
-      renderApiSection(),
-      renderTabs(),
-      renderContent(),
-    ])
-  ]);
-  return wrap;
-}
-
-function renderHeader() {
-  return div({ style: { padding: "28px 0 16px", display: "flex", alignItems: "center", gap: "12px" } }, [
-    div({ style: { width: "42px", height: "42px", borderRadius: "13px", background: "linear-gradient(135deg,#5F27CD,#FF6B81)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 18px rgba(95,39,205,0.35)", flexShrink: "0" } }, [
-      span({ style: { color: "#fff", fontWeight: "800", fontSize: "20px" } }, ["&#9834;"])
-    ]),
-    div(null, [
-      div({ style: { fontSize: "21px", fontWeight: "800", color: "#1a1a2e", letterSpacing: "-0.5px" } }, ["楽曲分析"]),
-      div({ style: { fontSize: "10px", color: "#bbb", fontWeight: "600", letterSpacing: "1.5px" } }, ["MUSIC THEORY"]),
-    ])
-  ]);
-}
-
-function renderApiSection() {
-  var section = div({ id: "api-section" }, [
-    div({ style: { fontSize: "11px", fontWeight: "700", color: "#aaa", marginBottom: "6px" } }, ["Anthropic APIキー（任意 - AI自由入力機能を使う場合）"]),
-    div({ style: { display: "flex", gap: "8px" } }, [
-      el("input", {
-        type: "password",
-        value: state.apiKey,
-        placeholder: "sk-ant-...",
-        style: { flex: "1", border: "2px solid #eee", borderRadius: "10px", padding: "9px 12px", fontFamily: "Outfit, sans-serif", fontSize: "13px", background: "#fafafa", color: "#1a1a2e" },
-        onInput: function(e) {
-          state.apiKey = e.target.value;
-          localStorage.setItem("rakkyoku_apikey", e.target.value);
-        }
-      }),
-      btn({ style: { background: "#5F27CD22", border: "none", borderRadius: "10px", padding: "9px 14px", fontFamily: "Outfit, sans-serif", fontSize: "12px", color: "#5F27CD", cursor: "pointer", fontWeight: "700" },
-        onClick: function() { alert("APIキーを保存しました。ブラウザのlocalStorageに保存されます。"); }
-      }, ["保存"]),
-    ]),
-  ]);
-  return section;
+  renderTabs();
+  var c = document.getElementById("content");
+  c.innerHTML = "";
+  var inner = el("div", "fade");
+  if (state.tab === "add") inner.appendChild(renderAdd());
+  else if (state.tab === "library") inner.appendChild(renderLibrary());
+  else inner.appendChild(renderTrend());
+  c.appendChild(inner);
 }
 
 function renderTabs() {
-  var items = [
-    { id: "add",     label: "追加",       count: 0 },
-    { id: "library", label: "ライブラリ", count: state.songs.length },
-    { id: "trend",   label: "傾向分析",   locked: state.songs.length < 2 },
+  var defs = [
+    { id: "add", label: "追加" },
+    { id: "library", label: "ライブラリ", n: state.songs.length },
+    { id: "trend", label: "傾向分析", locked: state.songs.length < 2 },
   ];
-  var wrap = div({ style: { display: "flex", background: "#fff", borderRadius: "16px", padding: "5px", gap: "4px", marginBottom: "20px", boxShadow: "0 2px 10px rgba(0,0,0,0.07)" } }, 
-    items.map(function(n) {
-      var active = state.tab === n.id;
-      var locked = !!n.locked;
-      var b = btn({
-        className: "tab-btn",
-        onClick: function() { if (!locked) { state.tab = n.id; render(); } },
-        style: { flex: "1", padding: "10px 6px", border: "none", borderRadius: "11px", cursor: locked ? "not-allowed" : "pointer", fontFamily: "Outfit, sans-serif", fontWeight: "700", fontSize: "13px",
-          background: active ? "#5F27CD" : "transparent",
-          color: locked ? "#ccc" : active ? "#fff" : "#999",
-          boxShadow: active ? "0 3px 12px rgba(95,39,205,0.28)" : "none",
-        }
-      }, [n.label]);
-      if (n.count > 0) {
-        b.appendChild(span({ style: { marginLeft: "5px", background: active ? "rgba(255,255,255,0.22)" : "#ede9ff", color: active ? "#fff" : "#5F27CD", borderRadius: "20px", padding: "1px 7px", fontSize: "11px" } }, [String(n.count)]));
-      }
-      return b;
-    })
-  );
-  return wrap;
+  var nav = document.getElementById("tabs");
+  nav.innerHTML = "";
+  defs.forEach(function(d) {
+    var cls = "tab" + (state.tab === d.id ? " active" : "") + (d.locked ? " locked" : "");
+    var b = el("button", cls, [d.label], { onclick: function() { if (!d.locked) { state.tab = d.id; render(); } } });
+    if (d.n) b.appendChild(el("span", "n", [String(d.n)]));
+    nav.appendChild(b);
+  });
 }
 
-function renderContent() {
-  var c = div({ className: "fade-up" });
-  if (state.tab === "add") c.appendChild(renderAddTab());
-  else if (state.tab === "library") c.appendChild(renderLibrary());
-  else if (state.tab === "trend") c.appendChild(renderTrend());
-  return c;
+function songRow(data, opts) {
+  var right = el("div", "keybpm");
+  var keyStr = data.key ? data.key.split(" ")[0] : "";
+  var bpmStr = data.bpm ? String(data.bpm) : "";
+  right.appendChild(el("div", data.key ? (isMinor(data.key) ? "key-minor" : "key-major") : null, [keyStr]));
+  if (opts.added) right.appendChild(el("div", "added", ["追加済"]));
+  else if (bpmStr) right.appendChild(el("div", null, ["\u266a=" + bpmStr]));
+
+  var kids = [
+    artBox(data.title, data.artist),
+    el("div", "meta", [
+      el("div", "t", [data.title]),
+      el("div", "a", [data.artist || "Standard"]),
+    ]),
+    right,
+  ];
+  if (opts.onDelete) {
+    kids.push(el("button", "del", ["\u00d7"], { onclick: function(e) { e.stopPropagation(); opts.onDelete(); } }));
+  }
+  return el("button", "row", kids, { onclick: opts.onClick });
 }
 
-function renderAddTab() {
-  var wrap = div(null, []);
+function renderAdd() {
+  var root = el("div");
 
-  // Free input section (only if API key set)
+  var legend = el("div", "legend");
+  var mj = el("span");
+  mj.appendChild(el("span", "dot mj"));
+  mj.appendChild(document.createTextNode("メジャーキー"));
+  var mn = el("span");
+  mn.appendChild(el("span", "dot mn"));
+  mn.appendChild(document.createTextNode("マイナーキー"));
+  legend.appendChild(mj);
+  legend.appendChild(mn);
+  root.appendChild(legend);
+
+  // AI free input (only when key set)
   if (state.apiKey) {
-    var card = div({ style: { background: "#fff", borderRadius: "22px", padding: "24px", boxShadow: "0 4px 22px rgba(0,0,0,0.07)", marginBottom: "14px" } }, [
-      div({ style: { fontSize: "17px", fontWeight: "800", color: "#1a1a2e", marginBottom: "3px" } }, ["曲名を入力して分析"]),
-      div({ style: { fontSize: "12px", color: "#bbb", marginBottom: "18px" } }, ["曲名を入れるとAIが自動分析します"]),
-    ]);
-
-    var titleInput = el("input", { type: "text", value: state.titleVal, placeholder: "例: Lemon", style: { width: "100%", border: "2px solid #eee", borderRadius: "12px", padding: "12px 15px", fontFamily: "Outfit, sans-serif", fontSize: "15px", background: "#fafafa", color: "#1a1a2e", marginBottom: "10px" } });
-    titleInput.addEventListener("input", function(e) { state.titleVal = e.target.value; });
-
-    var artistInput = el("input", { type: "text", value: state.artistVal, placeholder: "アーティスト名（任意）", style: { width: "100%", border: "2px solid #eee", borderRadius: "12px", padding: "12px 15px", fontFamily: "Outfit, sans-serif", fontSize: "15px", background: "#fafafa", color: "#1a1a2e", marginBottom: "14px" } });
-    artistInput.addEventListener("input", function(e) { state.artistVal = e.target.value; });
-
-    var msgDiv = div({ style: { fontSize: "13px", color: "#5F27CD", fontWeight: "600", padding: "10px 14px", background: "#f4f0ff", borderRadius: "10px", marginBottom: "12px", display: state.searchMsg ? "block" : "none" } }, [state.searchMsg]);
-
-    var addBtn = btn({
-      style: { width: "100%", padding: "14px", border: "none", borderRadius: "14px", fontFamily: "Outfit, sans-serif", fontWeight: "800", fontSize: "16px", cursor: "pointer", background: "linear-gradient(135deg,#5F27CD,#FF6B81)", color: "#fff", boxShadow: "0 5px 20px rgba(95,39,205,0.35)" },
-      onClick: function() {
-        var t = titleInput.value.trim();
-        if (!t || state.searching) return;
-        state.searching = true;
-        state.searchMsg = "AIが分析中...";
-        msgDiv.style.display = "block";
-        msgDiv.textContent = "AIが分析中...";
-        addBtn.disabled = true;
-        fetchSongInfo(t, artistInput.value.trim(), state.apiKey).then(function(info) {
-          var id = Date.now();
-          var song = { id: id, title: t, artist: artistInput.value.trim(), chords: info.chords || "", key: info.key || "", bpm: info.bpm, genre: info.genre || "", notes: info.notes || "", chordList: parseChords(info.chords || ""), color: PALETTE[state.songs.length % PALETTE.length], analysis: null };
-          state.songs.push(song);
-          state.expandedId = id;
-          state.tab = "library";
-          state.titleVal = "";
-          state.artistVal = "";
-          state.searching = false;
-          state.searchMsg = "";
-          render();
-        }).catch(function(e) {
-          state.searching = false;
-          msgDiv.textContent = "エラー: " + e.message;
-          addBtn.disabled = false;
+    var form = el("div", "ai-form");
+    form.appendChild(el("div", "genre-label", ["曲名で調べる"]));
+    var titleIn = el("input", null, null, { type: "text", placeholder: "曲名" });
+    var artistIn = el("input", null, null, { type: "text", placeholder: "アーティスト名（任意）" });
+    var status = el("div", "status");
+    var go = el("button", "readbtn", ["調べて追加"], { onclick: function() {
+      var t = titleIn.value.trim();
+      if (!t || state.searching) return;
+      state.searching = true;
+      status.textContent = "調べています…";
+      go.disabled = true;
+      fetchSongInfo(t, artistIn.value.trim(), state.apiKey).then(function(info) {
+        var id = Date.now();
+        state.songs.push({
+          id: id, title: t, artist: artistIn.value.trim(),
+          chords: info.chords || "", key: info.key || "", bpm: info.bpm,
+          genre: info.genre || "", notes: info.notes || "",
+          chordList: parseChords(info.chords || ""),
         });
-      }
-    }, ["分析スタート"]);
-
-    card.appendChild(titleInput);
-    card.appendChild(artistInput);
-    card.appendChild(msgDiv);
-    card.appendChild(addBtn);
-    wrap.appendChild(card);
+        state.searching = false;
+        state.expandedId = id;
+        state.tab = "library";
+        render();
+      }).catch(function(e) {
+        state.searching = false;
+        status.textContent = "取得できませんでした: " + e.message;
+        go.disabled = false;
+      });
+    } });
+    form.appendChild(titleIn);
+    form.appendChild(artistIn);
+    form.appendChild(status);
+    form.appendChild(go);
+    root.appendChild(form);
   }
 
-  // Sample songs
-  var sampleCard = div({ style: { background: "#fff", borderRadius: "22px", padding: "24px", boxShadow: "0 4px 22px rgba(0,0,0,0.07)" } }, [
-    div({ style: { fontSize: "17px", fontWeight: "800", color: "#1a1a2e", marginBottom: "3px" } }, ["サンプル曲を選ぶ"]),
-    div({ style: { fontSize: "12px", color: "#bbb", marginBottom: "18px" } }, ["タップするとライブラリに追加されます"]),
-  ]);
-
-  var colorIdx = 0;
-  SAMPLES.forEach(function(s, i) {
+  // Samples grouped by genre
+  SAMPLES.forEach(function(s) {
     if (s.header) {
-      sampleCard.appendChild(div({ style: { fontSize: "11px", fontWeight: "800", color: "#5F27CD", letterSpacing: "2px", margin: "16px 0 8px", paddingBottom: "4px", borderBottom: "2px solid #ede9ff" } }, [s.header]));
+      root.appendChild(el("div", "genre-label", [s.header]));
       return;
     }
     var data = SONG_DB[s.key];
     if (!data) return;
-    var i2 = colorIdx++;
-    var color = PALETTE[i2 % PALETTE.length];
     var added = state.songs.find(function(x) { return x.dbKey === s.key; });
-    var row = btn({
-      className: "sample-btn",
-      style: { display: "flex", alignItems: "center", gap: "14px", padding: "14px 16px", background: added ? color + "12" : "#fafafa", border: "1.5px solid " + (added ? color + "44" : "#f0f0f0"), borderRadius: "14px", cursor: "pointer", width: "100%", textAlign: "left", marginBottom: "8px", fontFamily: "Outfit, sans-serif", "--color": color },
+    root.appendChild(songRow(data, {
+      added: !!added,
       onClick: function() {
         if (added) { state.expandedId = added.id; state.tab = "library"; render(); return; }
         var id = Date.now();
-        var song = Object.assign({}, data, { id: id, dbKey: s.key, chordList: parseChords(data.chords), color: color, aiAnalysis: null });
-        state.songs.push(song);
+        state.songs.push(Object.assign({}, data, {
+          id: id, dbKey: s.key, chordList: parseChords(data.chords),
+        }));
         state.expandedId = id;
         state.tab = "library";
         render();
       }
-    }, [
-      (function() {
-        var iconBox = div({ style: { width: "40px", height: "40px", borderRadius: "11px", background: color + "20", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: "0", fontSize: "18px", color: color, overflow: "hidden" } }, ["♪"]);
-        fetchArtwork(data.title, data.artist, function(url) {
-          if (url) {
-            iconBox.innerHTML = "";
-            iconBox.appendChild(el("img", { src: url, style: { width: "100%", height: "100%", objectFit: "cover" } }));
-          }
-        });
-        return iconBox;
-      })(),
-      div({ style: { flex: "1", minWidth: "0" } }, [
-        div({ style: { fontSize: "14px", fontWeight: "700", color: "#1a1a2e" } }, [data.title]),
-        div({ style: { fontSize: "11px", color: "#bbb", marginTop: "2px" } }, [data.artist || "Standard"]),
-      ]),
-      div({ style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "3px", flexShrink: "0" } }, [
-        span({ style: { background: color + "18", color: color, borderRadius: "7px", padding: "2px 9px", fontSize: "11px", fontWeight: "700" } }, [data.key.split(" ")[0]]),
-        added ? span({ style: { fontSize: "10px", color: color, fontWeight: "700" } }, ["追加済"]) : null,
-      ].filter(Boolean)),
-    ]);
-    sampleCard.appendChild(row);
+    }));
   });
 
-  wrap.appendChild(sampleCard);
-  return wrap;
+  // Settings
+  var det = el("details", "settings");
+  det.appendChild(el("summary", null, ["AI分析の設定（任意）"]));
+  var inner = el("div", "inner");
+  var keyIn = el("input", null, null, { type: "password", placeholder: "sk-ant-...", value: state.apiKey });
+  keyIn.addEventListener("input", function(e) {
+    state.apiKey = e.target.value;
+    localStorage.setItem("rakkyoku_apikey", e.target.value);
+  });
+  inner.appendChild(keyIn);
+  inner.appendChild(el("div", "hint", ["Anthropic APIキーを設定すると、任意の曲名を入力して分析できます。キーはこのブラウザ内にのみ保存されます。"]));
+  det.appendChild(inner);
+  root.appendChild(det);
+
+  return root;
 }
 
 function renderLibrary() {
+  var root = el("div");
   if (state.songs.length === 0) {
-    return div({ style: { background: "#fff", borderRadius: "22px", padding: "56px 20px", textAlign: "center", boxShadow: "0 4px 22px rgba(0,0,0,0.07)" } }, [
-      div({ style: { fontSize: "40px", marginBottom: "10px" } }, ["♫"]),
-      div({ style: { fontSize: "15px", fontWeight: "700", color: "#ccc", marginBottom: "14px" } }, ["まだ曲がありません"]),
-      btn({ style: { background: "linear-gradient(135deg,#5F27CD,#FF6B81)", border: "none", borderRadius: "12px", padding: "11px 22px", fontFamily: "Outfit, sans-serif", fontWeight: "700", fontSize: "13px", color: "#fff", cursor: "pointer" }, onClick: function() { state.tab = "add"; render(); } }, ["+ 曲を選ぶ"]),
+    var empty = el("div", "empty", [
+      el("div", "mark", ["\u266b"]),
+      el("p", null, ["まだ曲がありません"]),
+      el("button", null, ["曲を選ぶ"], { onclick: function() { state.tab = "add"; render(); } }),
     ]);
+    root.appendChild(empty);
+    return root;
   }
 
-  var list = div({ style: { display: "flex", flexDirection: "column", gap: "10px" } });
   state.songs.forEach(function(song) {
-    list.appendChild(renderSongCard(song));
-  });
-  return list;
-}
-
-function renderSongCard(song) {
-  var open = state.expandedId === song.id;
-  var card = div({ style: { background: "#fff", borderRadius: "18px", overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.07)" }, className: "pop" });
-
-  var header = div({
-    className: "song-row",
-    style: { display: "flex", alignItems: "center", gap: "13px", padding: "15px 18px", cursor: "pointer", transition: "background 0.15s" },
-    onClick: function() { state.expandedId = open ? null : song.id; render(); }
-  }, [
-    (function() {
-      var iconBox = div({ style: { width: "40px", height: "40px", borderRadius: "11px", background: song.color + "20", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: "0", fontSize: "18px", color: song.color, overflow: "hidden" } }, ["♪"]);
-      fetchArtwork(song.title, song.artist, function(url) {
-        if (url) {
-          iconBox.innerHTML = "";
-          iconBox.appendChild(el("img", { src: url, style: { width: "100%", height: "100%", objectFit: "cover" } }));
-        }
-      });
-      return iconBox;
-    })(),
-    div({ style: { flex: "1", minWidth: "0" } }, [
-      div({ style: { fontSize: "14px", fontWeight: "700", color: "#1a1a2e", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, [song.title]),
-      div({ style: { fontSize: "11px", color: "#bbb", marginTop: "2px" } }, [song.artist || "Standard"]),
-    ]),
-    div({ style: { display: "flex", gap: "5px", flexShrink: "0" } }, [
-      song.key ? badge(song.key.split(" ")[0], song.color) : null,
-      song.bpm ? span({ style: { background: "#f5f5f5", color: "#bbb", borderRadius: "7px", padding: "3px 9px", fontSize: "11px" } }, [song.bpm + "BPM"]) : null,
-    ].filter(Boolean)),
-    btn({
-      style: { background: "none", border: "none", color: "#e0e0e0", cursor: "pointer", fontSize: "16px", padding: "2px 5px", lineHeight: "1", flexShrink: "0" },
-      onClick: function(e) {
-        e.stopPropagation();
-        state.songs = state.songs.filter(function(s) { return s.id !== song.id; });
+    var open = state.expandedId === song.id;
+    root.appendChild(songRow(song, {
+      onClick: function() { state.expandedId = open ? null : song.id; render(); },
+      onDelete: function() {
+        state.songs = state.songs.filter(function(x) { return x.id !== song.id; });
         if (state.expandedId === song.id) state.expandedId = null;
         render();
       }
-    }, ["x"]),
-    span({ style: { color: "#ccc", fontSize: "11px", flexShrink: "0" } }, [open ? "v" : ">"]),
-  ]);
-  card.appendChild(header);
+    }));
+    if (open) root.appendChild(renderPanel(song));
+  });
+  return root;
+}
 
-  if (open) {
-    var body = div({ style: { padding: "0 18px 18px" } });
-    body.appendChild(div({ style: { height: "1px", background: "#f5f5f5", marginBottom: "14px" } }));
+function renderPanel(song) {
+  var panel = el("div", "panel fade");
 
-    if (song.chordList && song.chordList.length > 0) {
-      var chordWrap = div({ style: { marginBottom: "14px" } }, [
-        div({ style: { fontSize: "9px", fontWeight: "700", color: "#ddd", letterSpacing: "2px", marginBottom: "9px" } }, ["CHORD PROGRESSION"]),
-        div({ style: { display: "flex", flexWrap: "wrap", gap: "7px" } },
-          song.chordList.map(function(ch) {
-            return span({ style: { background: song.color + "14", border: "1.5px solid " + song.color + "38", borderRadius: "9px", padding: "6px 12px", fontSize: "14px", fontWeight: "700", color: song.color } }, [ch]);
-          })
-        )
-      ]);
-      body.appendChild(chordWrap);
+  if (song.chordList && song.chordList.length > 0) {
+    var sheet = el("div", "chordsheet" + (isMinor(song.key) ? " minor" : ""));
+    var bars = chordBars(song.chordList);
+    sheet.appendChild(el("span", "bar", ["|"]));
+    bars.forEach(function(b, i) {
+      sheet.appendChild(document.createTextNode(b));
+      sheet.appendChild(el("span", "bar", ["|"]));
+    });
+    panel.appendChild(sheet);
+  }
+
+  var metaParts = [];
+  if (song.key) metaParts.push("Key: " + song.key);
+  if (song.bpm) metaParts.push("BPM " + song.bpm);
+  if (song.genre) metaParts.push(song.genre);
+  if (metaParts.length) panel.appendChild(el("div", "metaline", [metaParts.join("\u2003/\u2003")]));
+  if (song.notes) panel.appendChild(el("div", "notes", [song.notes]));
+
+  var analysisWrap = el("div", "analysis");
+  analysisWrap.style.display = "none";
+
+  function fillBuiltIn() {
+    song.analysis.forEach(function(item) {
+      analysisWrap.appendChild(el("h3", null, [item.heading.replace(/^\d+\.\s*/, "")]));
+      analysisWrap.appendChild(el("p", null, [item.body]));
+    });
+  }
+  function fillAI(text) {
+    text.split("\n").forEach(function(line) {
+      if (!line.trim()) return;
+      if (/^\d+\.\s.{1,30}$/.test(line.trim())) {
+        analysisWrap.appendChild(el("h3", null, [line.trim().replace(/^\d+\.\s*/, "")]));
+      } else {
+        analysisWrap.appendChild(el("p", null, [line]));
+      }
+    });
+  }
+
+  var readBtn = el("button", "readbtn", ["楽典分析を読む"], { onclick: function() {
+    if (analysisWrap.style.display === "block") {
+      analysisWrap.style.display = "none";
+      readBtn.textContent = "楽典分析を読む";
+      return;
     }
-
-    var tags = div({ style: { display: "flex", gap: "7px", flexWrap: "wrap", marginBottom: "14px" } });
-    if (song.genre) tags.appendChild(span({ style: { background: "#f5f5f5", borderRadius: "7px", padding: "4px 11px", fontSize: "11px", color: "#999", fontWeight: "600" } }, [song.genre]));
-    if (song.key) tags.appendChild(span({ style: { background: "#f5f5f5", borderRadius: "7px", padding: "4px 11px", fontSize: "11px", color: "#999", fontWeight: "600" } }, [song.key]));
-    if (song.notes) tags.appendChild(span({ style: { background: "#fffbf0", borderRadius: "7px", padding: "4px 11px", fontSize: "11px", color: "#cc9900", fontWeight: "600" } }, [song.notes]));
-    body.appendChild(tags);
-
-    // Analysis button
-    var analysisDiv = div({ style: { marginTop: "12px", background: "#fafafa", borderRadius: "12px", padding: "16px", display: "none" } });
-
-    if (song.analysis) {
-      song.analysis.forEach(function(item) {
-        analysisDiv.appendChild(div({ style: { marginBottom: "12px" } }, [
-          div({ style: { fontSize: "12px", fontWeight: "800", color: song.color, marginBottom: "4px" } }, [item.heading]),
-          div({ style: { fontSize: "12px", lineHeight: "1.85", color: "#555" } }, [item.body]),
-        ]));
-      });
-      analysisDiv.style.display = "block";
-    } else if (song.aiAnalysis) {
-      var lines = song.aiAnalysis.split("\n");
-      lines.forEach(function(line) {
-        if (!line.trim()) return;
-        var isHeading = /^\d+\.\s.{1,30}$/.test(line.trim());
-        analysisDiv.appendChild(div({ style: { fontSize: isHeading ? "13px" : "12px", fontWeight: isHeading ? "800" : "400", color: isHeading ? song.color : "#555", marginTop: isHeading ? "14px" : "0", lineHeight: "1.85" } }, [line]));
-      });
-      analysisDiv.style.display = "block";
-    }
-
-    var analysisBtn = btn({
-      style: { width: "100%", padding: "12px", border: "none", borderRadius: "12px", fontFamily: "Outfit, sans-serif", fontWeight: "700", fontSize: "14px", cursor: "pointer", background: song.color + "16", color: song.color },
-      onClick: function() {
-        if (song.analysis || song.aiAnalysis) {
-          analysisDiv.style.display = analysisDiv.style.display === "none" ? "block" : "none";
-          analysisBtn.textContent = analysisDiv.style.display === "none" ? "楽典・理論分析を見る" : "閉じる";
-          return;
-        }
-        if (!state.apiKey) { alert("AI分析にはAPIキーが必要です。ページ上部に入力してください。"); return; }
-        analysisBtn.textContent = "分析中...";
-        analysisBtn.disabled = true;
+    if (analysisWrap.childNodes.length === 0) {
+      if (song.analysis) { fillBuiltIn(); }
+      else if (song.aiAnalysis) { fillAI(song.aiAnalysis); }
+      else {
+        if (!state.apiKey) { alert("AI分析にはAPIキーの設定が必要です（追加タブ下部）。"); return; }
+        readBtn.disabled = true;
+        readBtn.textContent = "分析中…";
         analyzeTheory(song, state.apiKey).then(function(text) {
           song.aiAnalysis = text;
-          var lines2 = text.split("\n");
-          lines2.forEach(function(line) {
-            if (!line.trim()) return;
-            var isH = /^\d+\.\s.{1,30}$/.test(line.trim());
-            analysisDiv.appendChild(div({ style: { fontSize: isH ? "13px" : "12px", fontWeight: isH ? "800" : "400", color: isH ? song.color : "#555", marginTop: isH ? "14px" : "0", lineHeight: "1.85" } }, [line]));
-          });
-          analysisDiv.style.display = "block";
-          analysisBtn.textContent = "閉じる";
-          analysisBtn.disabled = false;
+          fillAI(text);
+          analysisWrap.style.display = "block";
+          readBtn.disabled = false;
+          readBtn.textContent = "閉じる";
         }).catch(function(e) {
-          analysisBtn.textContent = "エラー: " + e.message.slice(0, 40);
-          analysisBtn.disabled = false;
+          readBtn.disabled = false;
+          readBtn.textContent = "楽典分析を読む";
+          alert("分析に失敗しました: " + e.message);
         });
+        return;
       }
-    }, ["楽典・理論分析を見る"]);
+    }
+    analysisWrap.style.display = "block";
+    readBtn.textContent = "閉じる";
+  } });
 
-    body.appendChild(analysisBtn);
-    body.appendChild(analysisDiv);
-    card.appendChild(body);
-  }
-  return card;
+  panel.appendChild(readBtn);
+  panel.appendChild(analysisWrap);
+  return panel;
 }
 
 function renderTrend() {
-  var wrap = div({ style: { display: "flex", flexDirection: "column", gap: "13px" } });
+  var root = el("div");
 
-  var listCard = div({ style: { background: "#fff", borderRadius: "22px", padding: "20px", boxShadow: "0 4px 22px rgba(0,0,0,0.07)" } }, [
-    div({ style: { fontSize: "15px", fontWeight: "800", color: "#1a1a2e", marginBottom: "12px" } }, ["登録中の曲"]),
+  var minor = state.songs.filter(function(s) { return isMinor(s.key); }).length;
+  var major = state.songs.length - minor;
+  var avgBpm = Math.round(state.songs.reduce(function(a, s) { return a + (s.bpm || 100); }, 0) / state.songs.length);
+  var genres = {};
+  state.songs.forEach(function(s) { if (s.genre) genres[s.genre] = (genres[s.genre] || 0) + 1; });
+  var top = Object.entries(genres).sort(function(a, b) { return b[1] - a[1]; })[0];
+
+  var stats = el("div", "stats", [
+    el("div", "stat", [el("div", "v", [String(major)]), el("div", "l", ["MAJOR"])]),
+    el("div", "stat", [el("div", "v mn", [String(minor)]), el("div", "l", ["MINOR"])]),
+    el("div", "stat", [el("div", "v", [String(avgBpm)]), el("div", "l", ["AVG BPM"])]),
+    el("div", "stat", [el("div", "v", [top ? top[0].split(" ")[0].split("/")[0] : "-"]), el("div", "l", ["TOP GENRE"])]),
   ]);
+  root.appendChild(stats);
+
+  var list = el("div", "trend-list");
+  list.appendChild(el("div", "genre-label", ["登録中の曲"]));
   state.songs.forEach(function(s) {
-    listCard.appendChild(div({ style: { display: "flex", alignItems: "center", gap: "10px", padding: "9px 13px", background: "#fafafa", borderRadius: "11px", marginBottom: "7px" } }, [
-      div({ style: { width: "7px", height: "7px", borderRadius: "50%", background: s.color, flexShrink: "0" } }),
-      div({ style: { flex: "1" } }, [
-        span({ style: { fontWeight: "700", fontSize: "13px", color: "#1a1a2e" } }, [s.title]),
-        span({ style: { fontSize: "11px", color: "#bbb", marginLeft: "7px" } }, [s.artist || ""]),
-      ]),
-      s.key ? span({ style: { fontSize: "11px", fontWeight: "700", color: s.color } }, [s.key.split(" ")[0]]) : null,
-    ].filter(Boolean)));
+    list.appendChild(songRow(s, { onClick: function() { state.expandedId = s.id; state.tab = "library"; render(); } }));
   });
-  wrap.appendChild(listCard);
+  root.appendChild(list);
 
-  var minorCount = state.songs.filter(function(s) { return s.key && (s.key.indexOf("マイナー") !== -1 || (s.key.split(" ")[0] || "").endsWith("m")); }).length;
-  var majorCount = state.songs.length - minorCount;
-  var genres = {}; state.songs.forEach(function(s) { if (s.genre) genres[s.genre] = (genres[s.genre] || 0) + 1; });
-  var topGenre = Object.entries(genres).sort(function(a,b){return b[1]-a[1];})[0];
-  var avgBpm = Math.round(state.songs.reduce(function(a,s){return a+(s.bpm||100);},0)/state.songs.length);
+  var comment = el("div", "trend-comment");
+  comment.appendChild(el("h3", null, ["傾向"]));
+  var msg = minor > major
+    ? "マイナー系の曲が多く、内省的で感情の機微を大切にする傾向があります。"
+    : major > minor
+    ? "メジャー系の曲が多く、明るく前向きな響きを好む傾向があります。"
+    : "メジャーとマイナーをバランスよく聴く、幅広い音楽的感受性を持つタイプです。";
+  msg += avgBpm >= 120 ? " テンポの速い曲が中心で、推進力のあるリズムを求めるようです。"
+      : avgBpm <= 90 ? " ゆったりとしたテンポが中心で、じっくり聴き込むスタイルです。"
+      : " ミドルテンポ中心の、バランスの取れた選曲です。";
+  comment.appendChild(el("p", null, [msg]));
+  root.appendChild(comment);
 
-  var statsCard = div({ style: { background: "#fff", borderRadius: "22px", padding: "22px", boxShadow: "0 4px 22px rgba(0,0,0,0.07)" } }, [
-    div({ style: { fontSize: "15px", fontWeight: "800", color: "#5F27CD", marginBottom: "16px" } }, ["統計サマリー"]),
-    div({ style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "16px" } },
-      [
-        ["メジャー", majorCount + "曲", "#54A0FF"],
-        ["マイナー", minorCount + "曲", "#FF6B81"],
-        ["平均BPM", String(avgBpm), "#FF9F43"],
-        ["人気ジャンル", topGenre ? topGenre[0] : "-", "#1DD1A1"],
-      ].map(function(item) {
-        return div({ style: { background: item[2] + "12", borderRadius: "12px", padding: "12px 14px" } }, [
-          div({ style: { fontSize: "10px", color: item[2], fontWeight: "700", letterSpacing: "1px", marginBottom: "4px" } }, [item[0]]),
-          div({ style: { fontSize: "20px", fontWeight: "800", color: item[2] } }, [item[1]]),
-        ]);
-      })
-    ),
-    div({ style: { background: "#fafafa", borderRadius: "14px", padding: "16px" } }, [
-      div({ style: { fontSize: "12px", fontWeight: "800", color: "#5F27CD", marginBottom: "8px" } }, ["傾向コメント"]),
-      div({ style: { fontSize: "12px", lineHeight: "1.85", color: "#555" } }, [
-        minorCount > majorCount ? "マイナー系の曲が多く、内省的・感情的な音楽を好む傾向があります。" :
-        majorCount > minorCount ? "メジャー系の曲が多く、明るく前向きな音楽を好む傾向があります。" :
-        "メジャー・マイナーをバランスよく好む傾向があります。"
-      ]),
-    ]),
-  ]);
-  wrap.appendChild(statsCard);
-  return wrap;
+  return root;
 }
 
 render();
+
 </script>
 </body>
 </html>
