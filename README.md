@@ -32,7 +32,7 @@
 
 ## 技術構成
 
-- 純粋なHTML / CSS / JavaScript（フレームワークなし・単一ファイル）
+- HTML / CSS / JavaScript（フレームワークなし・単一ファイル）
 - ジャケット画像: iTunes Search API（キー不要）
 - ホスティング: GitHub Pages
 
